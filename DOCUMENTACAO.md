@@ -90,10 +90,18 @@ comentário, ele tenta três coisas nesta ordem:
 
 Repare que `parse_coordenadas` devolve lista vazia quando não entende — e o
 pipeline **não adivinha**. Um pixel pintado no lugar errado é pior que uma
-mensagem de erro, porque quem pintou só descobre depois. Numa lista, então, a
-regra é dura: **uma peça inválida derruba o pedido inteiro**. Pintar metade
-seria o pior desfecho possível — a pessoa veria um desenho incompleto, acharia
-que escreveu certo, e iria embora sem entender o que faltou.
+mensagem de erro, porque quem pintou só descobre depois. Essa dureza é sobre a
+**peça**: `"H5extra"` nunca vira `H5`, e nunca vai virar.
+
+Ela já foi dura sobre o **pedido** também — uma peça inválida derrubava a lista
+inteira — e isso estava errado. O campo do painel tinha uma linha só, e um
+`<input>` de uma linha cola texto de várias linhas **grudado**: a receita de um
+coração em três linhas chegava como `...AE22S23...`, uma "coordenada" que não
+existe, e o jogo respondia `NÃO ENTENDI` com as outras 72 células na mão. Quem
+colou a receita e viu zero pixel não conclui "digitei errado" — conclui que não
+funciona. Hoje a peça ilegível é **denunciada pelo nome** e o resto pinta:
+`NAO ENTENDI: AE22S23`. Pintar metade era o pior desfecho enquanto ninguém
+sabia *qual* metade; com o nome da peça na tela, é o melhor.
 
 ### Desenhar de uma vez: cem rosas e a lista
 
@@ -107,19 +115,28 @@ presente. Um Galaxy (base 60) manda 60 pixels; cem rosas mandavam 10, porque
 10 em silêncio. Agora existe, em 100: cem rosas valem cem pixels, e um streak
 maior continua parando aí.
 
-**O comentário só entendia uma coordenada.** `parse_coordenadas` aceita
-`A2, B2, C3`, `A2,B2`, `A2; B2` e `A2 B2`, além de tudo que a versão antiga
-aceitava. Três decisões dentro dele:
+**O comentário só entendia uma coordenada.** `parse_pedido` aceita
+`A2, B2, C3`, `A2,B2`, `A2; B2`, `A2 B2` e uma coordenada por linha, além de
+tudo que a versão antiga aceitava. Quatro decisões dentro dele:
 
 - **A frase inteira tem a primeira chance.** `"H 5"` é uma célula desde o
   primeiro dia; se o espaço separasse lista antes disso, quem escreve com
   espaço pararia de pintar. Só o que *não* é uma coordenada sozinho chega a ser
-  partido.
+  partido — e aí o espaço também corta, para `"A2, B2 C3"` virar três células.
+- **A quebra de linha corta junto com a vírgula.** Não é enfeite: é o que faz
+  a receita de várias linhas funcionar no campo do painel. Nenhuma coordenada
+  válida contém `\n`, então cortar por ele não tem risco nenhum.
 - **Célula repetida conta uma vez.** `"A2, a2, A-2"` é um pedido, não três.
+  Peça ilegível repetida também vira um aviso só.
 - **`/p A2` é o prefixo, não a coluna "PA".** Não existe canvas largo o
   bastante para "PA" ser uma coluna de verdade (índice 416), e é por isso mesmo
   que a ambiguidade morre na ordem das checagens: ela não daria erro, daria um
   pixel no lugar errado.
+
+O que volta é um `Pedido`, não uma lista: `pedido.coordenadas` (o que dá para
+pintar) e `pedido.invalidas` (as peças cruas, do jeito que a pessoa escreveu,
+para a tela poder dizer o nome delas). `parse_coordenadas` continua existindo
+como atalho para quem só quer as células.
 
 **O cooldown é do comentário, não de cada pixel.** Em `game/painting.py`,
 `pintar_lote` compartilha um `_Relogio` entre as células: a primeira que passa
@@ -134,6 +151,12 @@ a lista, e `max_pixels_por_evento` corta o crédito. Nos dois casos o que entrou
 é pintado e um aviso diz o número — `SEM PIXELS — MANDE UMA ROSA 🌹 (3 DE 10)`
 ou `SO CABEM 100 POR VEZ — 100 DE 150 PINTADOS`. Nunca truncar calado: a pessoa
 precisa saber que faltou, senão a conclusão é "o jogo quebrou".
+
+Os dois avisos contam só células legíveis, e a peça ilegível tem um terceiro
+aviso, separado: `NAO ENTENDI: AE22S23`. Ele não promete nada sobre pintura de
+propósito — vale igual quando o desenho entrou inteiro e quando o saldo acabou
+no meio, e "o resto entrou" seria mentira no segundo caso. No máximo três peças
+aparecem, encurtadas em 14 caracteres; o resto vira contagem.
 
 Cem células levam ~150 ms e quatro escritas no banco cada uma. O teto de 100
 existe por isso: um comentário colado com as 2550 células do quadro deixaria a
@@ -175,7 +198,7 @@ arquivo, não olha o relógio (o tempo entra por parâmetro). Consequência prá
 
 | Arquivo | O que faz | API principal |
 |---|---|---|
-| `coordinates.py` | `"H5"` ↔ `(7, 5)`, e `"A2, B2, C3"` ↔ três células | `parse_coordenada`, `parse_coordenadas`, `rotulo_de`, `parece_pintura` |
+| `coordinates.py` | `"H5"` ↔ `(7, 5)`, e `"A2, B2, C3"` ↔ três células | `parse_coordenada`, `parse_pedido`, `parse_coordenadas`, `Pedido`, `rotulo_de`, `parece_pintura` |
 | `canvas.py` | A grade e as células | `CanvasModel`, `Celula` |
 | `colors.py` | Cor por pessoa, paleta, cores especiais | `cor_automatica`, `parse_cor`, `Cor` |
 | `inventory.py` | Quantos pixels cada um tem | `adicionar`, `definir`, `gastar` |
@@ -236,6 +259,15 @@ mexe quando quer acrescentar um componente novo.
 | `ui/js/effects.js` | Partículas e animações. |
 | `ui/js/eventos.js` | O desenho dos eventos (arco-íris, CAOS, DESAFIO) por cima da grade. |
 | `control/control.js` | O painel. Fala HTTP puro, sem WebSocket. |
+
+**O campo de texto do painel é um `<textarea>`, e isso não é estética.** O
+painel não valida coordenada nenhuma: ele manda o texto cru para
+`POST /api/simular` e quem responde é o pipeline. Só que um `<input>` de uma
+linha **cola texto de várias linhas grudado** — a receita do coração, colada
+inteira, chegava no servidor como uma linha só, com `AE22` e `S23` fundidos em
+`AE22S23`. Com o campo de várias linhas a quebra sobrevive ao paste, e o
+parser do Python corta por ela. Se você trocar o `<textarea>` por `<input>`, o
+conserto que existe no servidor perde o efeito no painel.
 
 **O palco preenche a janela sozinho.** `#palco` tem uma **altura** de projeto
 fixa (1920) e uma **largura** que vem da janela: `width: var(--largura-projeto)`.
@@ -656,11 +688,23 @@ decide é o limite do canvas; com eles (no painel) as duas implementações
 respondem igual **até nos casos de limite** — `/pintar 5 5` só é recusado pelo
 tamanho da grade.
 
+**A lista é a divergência que existe hoje, e ela é deliberada.** `analisarRotulo`
+no JS entende UMA célula; `parse_pedido` no Python entende a lista. Não é
+esquecimento: o único lugar do painel que chama o parser do JS é o campinho
+*Inspecionar pixel*, que pergunta "qual é esta célula?" e não tem como responder
+sobre setenta e quatro. Quem manda texto para o jogo manda para o Python — o
+painel entrega o comentário cru para `POST /api/simular` e quem decide é o
+pipeline. Se algum dia o painel precisar validar uma lista antes de enviar, o
+espelho tem que crescer junto; hoje ele não precisa, e por isso não cresceu.
+
 ### 2. Ninguém adivinha uma coordenada
 
-Se `parse_coordenada` devolve `None`, o jogo **mostra um erro e não pinta
-nada**. Não existe "quase H5". Um pixel errado é pior que uma mensagem de erro,
-porque quem pintou só descobre depois.
+Se uma peça não vira uma célula exata, ela **não é pintada** — e o jogo diz o
+nome dela. Não existe "quase H5": `H5extra` nunca vira `H5`. Isso vale para a
+peça, não para o pedido: numa lista, as peças boas pintam e as ruins aparecem em
+`NAO ENTENDI: <nome delas>`. Um pixel errado é pior que uma mensagem de erro,
+porque quem pintou só descobre depois; uma lista inteira perdida por causa de
+uma peça colada é pior que as duas.
 
 ### 3. O cliente nunca pinta
 
@@ -757,7 +801,7 @@ acima proíbe: `clearRect(0, 0, canvas.width, canvas.height)` **dentro** do
 multiplicado pelo dpr uma segunda vez.
 
 Com dpr ≥ 1 o retângulo ficava maior que o canvas e o defeito não existia —
-por isso ele sobreviveu a 647 testes e a meses de OBS, que roda a dpr 1. Com
+por isso ele sobreviveu a 656 testes e a meses de OBS, que roda a dpr 1. Com
 dpr **0,625** (zoom de 50% do navegador num monitor de Windows a 125%, que era
 como o streamer conseguia ver o quadro inteiro antes do ajuste automático), um
 canvas de 675 × 762 só era apagado nos primeiros 422 × 476.
@@ -817,7 +861,7 @@ borda voltaria, agora disparado pelo zoom da página em vez do monitor.
 ## 10. Testes
 
 ```bash
-.venv\Scripts\python.exe -m pytest tests/ -q      # 647 testes
+.venv\Scripts\python.exe -m pytest tests/ -q      # 656 testes
 node --test ui/js/*.test.mjs                      # 32 testes da tela
 ```
 

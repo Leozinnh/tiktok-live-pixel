@@ -60,7 +60,11 @@
 
     <div class="campo" id="campo-texto">
       <label for="sim-texto">Texto</label>
-      <input id="sim-texto" placeholder="H5  ·  /cor vermelho  ·  girafa" autocomplete="off">
+      <!-- Campo de VARIAS linhas de proposito: a receita de um desenho tem
+           quantas linhas couberem em 150 caracteres, e um <input> de uma linha
+           so cola tudo grudado ao receber o paste — "AE22" e "S23" viram
+           "AE22S23" e nasce uma coordenada que nao existe. -->
+      <textarea id="sim-texto" rows="3" placeholder="H5  ·  /cor vermelho  ·  A2, B2, C3" autocomplete="off"></textarea>
       <div class="atalhos" id="atalhos-coord"></div>
     </div>
 

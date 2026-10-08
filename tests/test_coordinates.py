@@ -20,6 +20,7 @@ from game.coordinates import (
     parece_pintura,
     parse_coordenada,
     parse_coordenadas,
+    parse_pedido,
     rotulo_de,
 )
 
@@ -195,6 +196,10 @@ def test_parece_pintura_aceita_lixo(texto):
 # pintando o mesmo pixel, e a lista so existe quando TODAS as pecas sao
 # coordenadas validas. Meia lista e pior que lista nenhuma — a pessoa acha que
 # pintou e vai embora.
+#
+# A unica excecao e a peca que NAO da para ler. Ela e DENUNCIADA e o resto
+# pinta: um comentario de 74 celulas colado com as linhas grudadas nao pode
+# virar zero pixel por causa de duas pecas coladas.
 
 
 @pytest.mark.parametrize(
@@ -244,21 +249,83 @@ def test_a_mesma_celula_duas_vezes_conta_uma():
 
 
 @pytest.mark.parametrize(
-    "texto",
+    "texto, esperadas, invalidas",
     [
-        "A2, B2, oi",
-        "A2, B2 legal",
-        "A2,",
-        ", A2",
-        "A2, , B2",
-        "A2, A51",
-        "A2, AA5",
-        "A2, /cor",
-        "A2, /pintar",
+        ("A2, B2, oi", ["A2", "B2"], ["oi"]),
+        ("A2, B2 legal", ["A2", "B2"], ["legal"]),
+        ("A2, A51", ["A2"], ["A51"]),
+        ("A2, AA5", ["A2"], ["AA5"]),
+        ("A2, /cor", ["A2"], ["/cor"]),
+        ("A2, /pintar", ["A2"], ["/pintar"]),
+        ("oi, A2", ["A2"], ["oi"]),
     ],
 )
-def test_lista_com_uma_peca_invalida_nao_pinta_nada(texto):
-    assert parse_coordenadas(texto, COLS, ROWS) == []
+def test_peca_ilegivel_e_denunciada_e_o_resto_pinta(texto, esperadas, invalidas):
+    """Uma peca que nao da para ler nao pode custar o desenho inteiro.
+
+    Foi assim que o coracao de 74 celulas virou zero: o campo do painel tem
+    uma linha so, o navegador colou as tres linhas da receita grudadinhas
+    ("AE22" + "S23" = "AE22S23"), e a regra antiga jogava fora as outras 72.
+    """
+    pedido = parse_pedido(texto, COLS, ROWS)
+    assert [c.rotulo for c in pedido.coordenadas] == esperadas
+    assert pedido.invalidas == invalidas
+
+
+@pytest.mark.parametrize(
+    "texto, esperadas",
+    [
+        ("A2,", ["A2"]),
+        (", A2", ["A2"]),
+        ("A2, , B2", ["A2", "B2"]),
+        ("A2, B2,", ["A2", "B2"]),
+    ],
+)
+def test_virgula_solta_nao_e_erro(texto, esperadas):
+    """Virgula no fim e pontuacao, nao coordenada ilegivel.
+
+    Ninguem merece ler "NAO ENTENDI ''" por ter deixado uma virgula.
+    """
+    pedido = parse_pedido(texto, COLS, ROWS)
+    assert [c.rotulo for c in pedido.coordenadas] == esperadas
+    assert pedido.invalidas == []
+
+
+@pytest.mark.parametrize(
+    "texto, esperadas",
+    [
+        ("A2\nB2\nC3", ["A2", "B2", "C3"]),
+        ("A2\r\nB2\r\nC3", ["A2", "B2", "C3"]),
+        ("A2,\nB2,\nC3", ["A2", "B2", "C3"]),
+        ("U20,V20\nT21,U21", ["U20", "V20", "T21", "U21"]),
+    ],
+)
+def test_quebra_de_linha_tambem_separa(texto, esperadas):
+    """A receita tem varias linhas, e o campo do painel tem varias linhas.
+
+    Se a quebra nao separasse, o texto que chega do <textarea> seria lido como
+    uma coordenada so e o desenho inteiro morreria.
+    """
+    assert [c.rotulo for c in parse_coordenadas(texto, 50, 51)] == esperadas
+
+
+def test_as_linhas_grudadas_nao_derrubam_o_desenho():
+    """O estrago do paste multi-linha num campo de uma linha so.
+
+    Nao da para adivinhar onde era a quebra — "AE22" + "S23" virou "AE22S23" e
+    a informacao morreu. Mas as celulas em volta continuam perfeitamente
+    legiveis, e 72 pixels na tela valem muito mais que zero.
+    """
+    pedido = parse_pedido("U20,V20,AB20,AE22S23,T23,U23,V23", 50, 51)
+    assert [c.rotulo for c in pedido.coordenadas] == [
+        "U20",
+        "V20",
+        "AB20",
+        "T23",
+        "U23",
+        "V23",
+    ]
+    assert pedido.invalidas == ["AE22S23"]
 
 
 @pytest.mark.parametrize("texto", [None, 42, ["A2"], ""])

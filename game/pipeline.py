@@ -6,8 +6,8 @@ significa: presente credita, comentario com coordenada pinta, conversa comum
 nao faz nada.
 
 Ele NAO implementa regra nenhuma. Quem sabe o preco, quem sabe o saldo e quem
-sabe se a coordenada existe sao `ServicoPintura` e `parse_coordenada`. Aqui so
-se decide a ORDEM das coisas e se montam as mensagens que vao para a tela.
+sabe se a coordenada existe sao `ServicoPintura` e `parse_pedido`. Aqui so se
+decide a ORDEM das coisas e se montam as mensagens que vao para a tela.
 
 Tres decisoes que valem explicacao:
 
@@ -36,7 +36,7 @@ from game.colors import (
     lista_da_paleta,
     parse_cor,
 )
-from game.coordinates import parse_coordenadas, parece_pintura
+from game.coordinates import Pedido, parse_pedido, parece_pintura
 from game.inventory import Inventario
 from game.painting import MOTIVO_SALDO, ServicoPintura, motivo_legivel
 from game.ranking import Ranking
@@ -54,6 +54,19 @@ MAX_POR_EVENTO_PADRAO = 400
 MAX_POR_COMENTARIO_PADRAO = 100
 
 TEXTO_NAO_ENTENDI = "NAO ENTENDI — ESCREVA LETRA + NUMERO, EX: H5"
+
+
+def _pecas_ilegiveis(invalidas: list[str]) -> str:
+    """As pecas que nao deram para ler, do jeito que a pessoa escreveu.
+
+    Tres bastam para ela reconhecer o proprio erro, e o resto vira contagem —
+    um aviso do tamanho do comentario nao caberia na tela nem seria lido.
+    """
+    mostradas = [p if len(p) <= 14 else p[:11] + "..." for p in invalidas[:3]]
+    texto = ", ".join(mostradas)
+    if len(invalidas) > 3:
+        texto += f" (+{len(invalidas) - 3})"
+    return texto
 
 
 def _timestamp(painted_at: str | None) -> int:
@@ -192,9 +205,15 @@ class Pipeline:
         # A coordenada vem primeiro: pintar e o que a pessoa veio fazer. Pode
         # ser UMA celula ou a lista inteira — quem decide e o parser, e o
         # pipeline nao precisa saber a diferenca.
-        coordenadas = parse_coordenadas(texto, self.cols, self.rows)
-        if coordenadas:
-            return await self._pintar(evento, handle, coordenadas)
+        #
+        # O pedido entra desde que UMA celula tenha dado para ler. Derrubar a
+        # lista toda por causa de uma peca ruim custa o desenho inteiro: a
+        # receita colada em tres linhas num campo de uma linha so chega com as
+        # celulas da quebra grudadas, e ninguem merece perder 72 pixels por
+        # causa de duas pecas coladas.
+        pedido = parse_pedido(texto, self.cols, self.rows)
+        if pedido.coordenadas:
+            return await self._pintar(evento, handle, pedido)
 
         cor = parse_cor(texto, self.paleta, self.especiais)
         if cor is not None:
@@ -206,18 +225,22 @@ class Pipeline:
         return []
 
     async def _pintar(
-        self, evento: LiveEvent, handle: str, coordenadas: list
+        self, evento: LiveEvent, handle: str, pedido: Pedido
     ) -> list[dict]:
         """Pinta a lista inteira e conta o que aconteceu.
 
         A lista e UMA jogada. O ranking sobe uma vez, no fim, com o total — em
         vez de uma passada por celula, que faria o `pixels=1` da versao antiga
         aparecer dez vezes no mesmo lugar da tabela.
+
+        `pedidas` conta so as celulas legiveis. As pecas que nao deram para ler
+        nao entram nessa conta porque nao sao pintura que faltou: elas tem
+        aviso proprio, com o texto delas, logo abaixo.
         """
         cor = self._cor_de(handle)
 
-        pedidas = len(coordenadas)
-        coordenadas = coordenadas[: self.max_por_comentario]
+        pedidas = len(pedido.coordenadas)
+        coordenadas = pedido.coordenadas[: self.max_por_comentario]
 
         resultados = await self.servico.pintar_lote(
             handle, coordenadas, cor.hex, cor.efeito
@@ -296,6 +319,14 @@ class Pipeline:
             else:
                 texto = f"{motivo_legivel(motivo_parada)} ({pintados} DE {pedidas})"
             mensagens.append(self._erro(texto))
+
+        # O aviso das pecas ilegiveis nao fala de pintura de proposito: ele vale
+        # igual quando o desenho entrou inteiro e quando o saldo acabou no meio,
+        # e prometer "o resto entrou" seria mentira no segundo caso.
+        if pedido.invalidas:
+            mensagens.append(
+                self._erro(f"NAO ENTENDI: {_pecas_ilegiveis(pedido.invalidas)}")
+            )
 
         return mensagens
 

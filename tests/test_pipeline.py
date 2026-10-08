@@ -726,18 +726,61 @@ async def test_lista_maior_que_o_saldo_pinta_o_que_cabe_e_avisa(tmp_path):
     assert "SEM PIXELS" in avisos[0]["text"]
 
 
-async def test_lista_com_coordenada_invalida_nao_pinta_nada(tmp_path):
-    """Meia lista e pior que lista nenhuma: a pessoa acha que desenhou."""
+async def test_peca_ilegivel_na_lista_nao_custa_o_desenho(tmp_path):
+    """O estrago do paste multi-linha no campo de uma linha do painel.
+
+    O navegador colou as tres linhas da receita grudadinhas, e "AE22" + "S23"
+    virou "AE22S23". Nao da para adivinhar onde era a quebra — mas as outras
+    72 celulas eram perfeitamente legiveis, e a regra antiga jogava todas fora
+    por causa dessa.
+    """
     c = await montar(tmp_path)
     c.creditar("joao", 10)
 
     mensagens = await c.enviar(
-        EventType.COMMENT, username="joao", display_name="Joao", text="A2, B2, oi"
+        EventType.COMMENT, username="joao", display_name="Joao", text="A2, B2, AE22S23"
+    )
+
+    await c.db.fechar()
+    pintados = [m for m in mensagens if m["type"] == "pixel_painted"]
+    assert [m["coordinate"] for m in pintados] == ["A2", "B2"]
+
+    aviso = primeira(mensagens, "toast")
+    assert aviso["kind"] == "error"
+    # A peca ruim e NOMEADA. Sem o nome, quem colou 74 celulas e viu 72 vai
+    # procurar o defeito no lugar errado.
+    assert "AE22S23" in aviso["text"]
+
+
+async def test_comentario_de_varias_linhas_pinta_o_desenho(tmp_path):
+    """A receita de um desenho tem varias linhas, e o campo do painel tambem."""
+    c = await montar(tmp_path)
+    c.creditar("joao", 10)
+
+    mensagens = await c.enviar(
+        EventType.COMMENT,
+        username="joao",
+        display_name="Joao",
+        text="A2,B2,C3\nD3,E3,F3",
+    )
+
+    await c.db.fechar()
+    pintados = [m for m in mensagens if m["type"] == "pixel_painted"]
+    assert [m["coordinate"] for m in pintados] == ["A2", "B2", "C3", "D3", "E3", "F3"]
+
+
+async def test_lista_so_de_lixo_continua_dando_nao_entendi(tmp_path):
+    """Sem nada legivel nao ha o que pintar, e o aviso velho continua valendo."""
+    c = await montar(tmp_path)
+    c.creditar("joao", 10)
+
+    mensagens = await c.enviar(
+        EventType.COMMENT, username="joao", display_name="Joao", text="A51, B99"
     )
 
     await c.db.fechar()
     assert c.canvas.preenchidas() == 0
-    assert "NAO ENTENDI" in primeira(mensagens, "toast")["text"]
+    assert primeira(mensagens, "toast")["text"] == "NAO ENTENDI — ESCREVA LETRA + NUMERO, EX: H5"
 
 
 async def test_cem_rosas_valem_cem_pixels_no_config_que_esta_no_repo(tmp_path):

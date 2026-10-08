@@ -25,9 +25,11 @@ decidindo junto o que aparece nele.**
    Curtidas, seguir e compartilhar também valem pixel.
 2. **Escreve a coordenada no chat.** `H5`, `h 5`, `/H5`, `/pixel H5` — o
    parser aceita todas as formas que as pessoas realmente escrevem. E aceita a
-   **lista inteira**: `A2, B2, C3` pinta as três de uma vez, com o cooldown
-   contando o comentário e não cada pixel. É assim que alguém que mandou um
-   presente grande desenha uma figura em vez de montá-la quadrado a quadrado.
+   **lista inteira**: `A2, B2, C3` — ou uma por linha — pinta tudo de uma vez,
+   com o cooldown contando o comentário e não cada pixel. É assim que alguém
+   que mandou um presente grande desenha uma figura em vez de montá-la
+   quadrado a quadrado. Uma peça que não dá para ler não derruba o resto: ela
+   aparece nomeada em `NAO ENTENDI: <peça>` e as outras pintam.
 3. **O pixel entra na hora.** Animação, partícula, brilho, e o nome de quem
    pintou aparece pequenininho em cima. Entrou para o feed.
 4. **O quadro é de todo mundo.** Alguém pode pintar por cima do seu pixel —
@@ -38,9 +40,7 @@ fica. Quem quiser escolher escreve `/cor vermelho` ou `/color #FF0000`.
 
 ### Um coração de verdade, para testar
 
-Cem rosas viram cem pixels. Escolha a cor, mande as rosas, e cole os três
-comentários abaixo — dois segundos entre um e outro. São 74 células, e sobram
-26 pixels.
+Cem rosas viram cem pixels. Dê a cor, mande as rosas, e cole isto:
 
 ```
 /cor vermelho
@@ -49,8 +49,18 @@ S23,T23,U23,V23,W23,X23,Y23,Z23,AA23,AB23,AC23,AD23,AE23,T24,U24,V24,W24,X24,Y24
 V26,W26,X26,Y26,Z26,AA26,AB26,W27,X27,Y27,Z27,AA27,X28,Y28,Z28,Y29
 ```
 
-Três comentários, e não um, porque **um comentário do TikTok cabe em ~150
-caracteres** e a lista inteira tem 321. O desenho aparece assim:
+São 74 células, e sobram 26 pixels.
+
+**No painel, é uma colada só.** O campo de texto aceita várias linhas, então
+`Ctrl+V` nas três linhas de coordenadas e *Simular* pinta o coração inteiro de
+uma vez — 74 pixels e **um** tique de cooldown. As três linhas são um
+comentário: o `\n` separa coordenada igual à vírgula.
+
+**Na LIVE de verdade, três comentários.** Não é o jogo que não aceita: um
+comentário do TikTok cabe em ~150 caracteres e a lista inteira tem 321. Cada
+linha acima cabe, e cada uma é uma jogada — dois segundos entre uma e outra. O
+`/cor vermelho` é um comentário à parte, e ele não pinta nada: só troca a cor.
+O desenho aparece assim:
 
 ```
      ████     ████
@@ -467,11 +477,19 @@ invariantes que não podem cair. Comece por lá.
 navegador é um `ping`. Pintura nasce de um evento do TikTok ou do painel. É o
 que impede alguém de abrir o endereço do streamer e desenhar de graça.
 
-**O parser recusa em vez de adivinhar.** `A51` não é "quase H5". Se a
-coordenada não é exata, o jogo mostra um erro e não pinta nada. Um pixel errado
-é pior que uma mensagem de erro, porque quem pintou só descobre depois. Numa
-lista vale o mesmo, e mais duro: `A2, B2, oi` **não pinta nem A2 nem B2**. Ver
-metade do desenho e achar que escreveu certo é o pior desfecho possível.
+**O parser recusa em vez de adivinhar.** `A51` não é "quase H5". Se a peça não
+vira uma célula exata, ela não é pintada — `H5extra` nunca vira `H5`. Um pixel
+errado é pior que uma mensagem de erro, porque quem pintou só descobre depois.
+
+**A dureza é da peça, não da lista.** Ela já foi das duas, e a segunda estava
+errada. O campo do painel tinha uma linha só, e um `<input>` de uma linha cola
+texto de várias linhas **grudado**: a receita do coração em três linhas chegava
+como `...AE22S23...`, uma "coordenada" impossível, e a regra antiga jogava fora
+as outras 72 células. A tela dizia só `NÃO ENTENDI` — e quem colou a receita e
+viu zero pixel não conclui "digitei errado", conclui que não funciona. Hoje a
+peça ilegível é **denunciada pelo nome** (`NAO ENTENDI: AE22S23`) e o resto
+pinta. Metade do desenho era o pior desfecho enquanto ninguém sabia qual
+metade; com o nome dela na tela, é o melhor.
 
 **O cooldown é do comentário, não do pixel.** Quem manda um presente grande e
 escreve `A2, B2, C3` está fazendo *uma* jogada. O limite de 2 segundos existe
@@ -533,6 +551,8 @@ declarado, então emoji no HTML, no CSS e no `config.json` é para usar sem medo
 | `tiktok.username ainda e o placeholder` | Troque o `@` no config.json ou rode com `--test` |
 | Conecta mas não acontece nada | O `@` está certo? A LIVE está no ar *agora*? |
 | Não pinta e mostra erro | A coordenada não existe, ou faltam pixels. O aviso diz qual. |
+| `NAO ENTENDI: <pedaço>` no painel | O aviso nomeia a peça ilegível; o resto da lista pinta. Colar as linhas de uma receita num `<input>` de uma linha gruda `AE22` com `S23` — o campo do painel é de várias linhas justamente por isso |
+| Colei a receita e faltou um pixel na quebra de linha | Duas células coladas viram uma peça só, e ela não dá para desfazer. O aviso diz o nome dela: apague e repita só aquela |
 | Pixel não aparece na tela do OBS | Recarregue a fonte. A pílula no topo diz `AO VIVO`? |
 | Canvas borrado no OBS | Confira 1080 × 1920 na fonte de navegador |
 | Uns quadrados com borda, outros sem | Escala do Windows a 125% (`devicePixelRatio` fracionário) — o desenho tem que passar por `bordasDaGrade()` |
@@ -549,7 +569,7 @@ declarado, então emoji no HTML, no CSS e no `config.json` é para usar sem medo
 ## Testes
 
 ```bash
-.venv\Scripts\python.exe -m pytest tests/ -q      # 647 testes
+.venv\Scripts\python.exe -m pytest tests/ -q      # 656 testes
 node --test ui/js/*.test.mjs                      # 32 testes da tela
 ```
 
@@ -559,6 +579,12 @@ lugar — e não existe bug pior neste projeto que esse. A lista de formas
 aceitas (`H5`, `h5`, `H 5`, `H-5`, `/p H5`…) é **a mesma** nos dois arquivos de
 teste, de propósito, e o painel do operador chama o parser passando o tamanho
 do canvas para responder igual ao backend até nos casos de limite.
+
+A **lista** é a única coisa que o Python entende e o JS não — e é deliberado. O
+único lugar do painel que chama o parser do JS é o campinho *Inspecionar pixel*,
+que pergunta por *uma* célula. Quem manda texto para o jogo manda o comentário
+cru para o Python. Se o painel um dia precisar validar uma lista antes de
+enviar, o espelho tem que crescer junto.
 
 `dom.test.mjs` confere que todo `id` que o JavaScript procura existe: na
 página, ou no HTML que ele mesmo escreve. Parece pouco, mas dois defeitos

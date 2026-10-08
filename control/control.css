@@ -174,7 +174,7 @@ body {
   margin-bottom: 5px;
 }
 
-input, select {
+input, select, textarea {
   width: 100%;
   padding: 10px 13px;
   font-size: 16px;
@@ -186,7 +186,13 @@ input, select {
   outline: none;
 }
 
-input:focus, select:focus { border-color: var(--ciano); }
+textarea {
+  resize: vertical;
+  min-height: 68px;
+  line-height: 1.5;
+}
+
+input:focus, select:focus, textarea:focus { border-color: var(--ciano); }
 
 select { font-family: inherit; }
 

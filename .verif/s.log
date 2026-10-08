@@ -147,3 +147,4 @@ ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conex�
 2026-10-08 17:04:04,394 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
 2026-10-08 17:05:04,404 INFO    game.events: Evento encerrado: arco_iris
 2026-10-08 17:08:04,433 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 17:08:24,496 INFO    game.events: Evento encerrado: caos
