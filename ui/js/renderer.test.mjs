@@ -27,7 +27,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { corDoArcoIris } from "./eventos.js";
+import { corDaCelula, corDoArcoIris } from "./eventos.js";
 import { Renderer } from "./renderer.js";
 
 const LARGURA = 1080;
@@ -136,6 +136,25 @@ const cobre = (caixa, canvas) =>
   caixa.y1 >= canvas.height;
 
 const tamanho = (c) => c[1] && `x ${c[1].x0}..${c[1].x1}  y ${c[1].y0}..${c[1].y1}`;
+
+/**
+ * A tinta com que a celula (x, y) foi preenchida no ultimo quadro desenhado.
+ *
+ * Os efeitos de celula (ARCO-IRIS, BRILHO) nao aparecem como comando proprio —
+ * eles trocam a COR com que a celula e preenchida. E esta cor que o teste olha.
+ */
+function tintaDaCelula(comandos, renderer, x, y) {
+  const { xs, ys } = renderer.bordas();
+  const tinta = comandos.find(
+    (c) =>
+      c[0] === "fillRect" &&
+      c[1].x0 === xs[x] &&
+      c[1].y0 === ys[y] &&
+      c[1].x1 === xs[x + 1] &&
+      c[1].y1 === ys[y + 1]
+  );
+  return tinta && tinta[2];
+}
 
 test("o apagador limpa o quadro INTEIRO, em qualquer dpr", () => {
   for (const dpr of DPRS) {
@@ -327,42 +346,31 @@ test("no ARCO-IRIS quem muda de cor sao as celulas ja pintadas", () => {
     ]);
     renderer.redimensionar(1080, 1220);
 
-    const { xs, ys } = renderer.bordas();
-
-    /** A tinta com que a celula (x,y) foi preenchida neste quadro. */
-    const tintaDaCelula = (x, y) => {
-      const tinta = comandos.find(
-        (c) =>
-          c[0] === "fillRect" &&
-          c[1].x0 === xs[x] &&
-          c[1].y0 === ys[y] &&
-          c[1].x1 === xs[x + 1] &&
-          c[1].y1 === ys[y + 1]
-      );
-      return tinta && tinta[2];
-    };
-
     renderer.efeito = "arco_iris";
     renderer.desenhar(0);
 
     assert.equal(
-      tintaDaCelula(...CELULA),
+      tintaDaCelula(comandos, renderer, ...CELULA),
       corDoArcoIris(...CELULA, 0),
       "a celula pintada nao saiu com a cor do arco-iris"
     );
-    assert.equal(tintaDaCelula(0, 0), undefined, "o quadro vazio ganhou cor do arco-iris");
+    assert.equal(
+      tintaDaCelula(comandos, renderer, 0, 0),
+      undefined,
+      "o quadro vazio ganhou cor do arco-iris"
+    );
 
     comandos.length = 0;
     renderer.desenhar(0.5);
 
     assert.notEqual(
-      tintaDaCelula(...CELULA),
+      tintaDaCelula(comandos, renderer, ...CELULA),
       corDoArcoIris(...CELULA, 0),
       "meio segundo depois a celula esta da mesma cor: o arco-iris ficou parado"
     );
     assert.notEqual(
-      tintaDaCelula(...CELULA),
-      tintaDaCelula(...VIZINHA),
+      tintaDaCelula(comandos, renderer, ...CELULA),
+      tintaDaCelula(comandos, renderer, ...VIZINHA),
       "duas celulas vizinhas saem da mesma cor: o desenho pisca de uma cor so"
     );
 
@@ -371,7 +379,64 @@ test("no ARCO-IRIS quem muda de cor sao as celulas ja pintadas", () => {
     comandos.length = 0;
     renderer.efeito = null;
     renderer.desenhar(0.9);
-    assert.equal(tintaDaCelula(...CELULA), "#ff3b5c");
+    assert.equal(tintaDaCelula(comandos, renderer, ...CELULA), "#ff3b5c");
+  } finally {
+    globalThis.window = anterior;
+  }
+});
+
+/**
+ * A HORA DO PIXEL e a hora dourada: a luz atravessa o quadro e as celulas que
+ * ela alcanca pegam sol. Como no ARCO-IRIS, nada e desenhado por cima — quem
+ * muda de cor sao as celulas JA pintadas, e a que esta fora da faixa continua
+ * exatamente da cor que a pessoa escolheu.
+ */
+test("na HORA DO PIXEL a celula sob a faixa pega sol, e so ela", () => {
+  const anterior = globalThis.window;
+  globalThis.window = { devicePixelRatio: 1 };
+
+  try {
+    const { ctx, comandos } = contextoFalso();
+    const canvas = { width: 0, height: 0, style: {}, getContext: () => ctx };
+    const renderer = new Renderer(canvas);
+    // Na diagonal 0, onde a faixa comeca em t=0.
+    const ACESA = [0, 0];
+    // Longe da faixa: continua na cor da pessoa em todo o teste.
+    const LONGE = [10, 10];
+    renderer.definirCanvas(25, 26, [
+      { x: ACESA[0], y: ACESA[1], color: "#3d9bff" },
+      { x: LONGE[0], y: LONGE[1], color: "#ff3b5c" },
+    ]);
+    renderer.redimensionar(1080, 1220);
+
+    renderer.efeito = "brilho";
+    renderer.desenhar(0);
+
+    assert.equal(
+      tintaDaCelula(comandos, renderer, ...ACESA),
+      corDaCelula("brilho", ...ACESA, 0, "#3d9bff"),
+      "a celula sob a faixa nao saiu com a cor acesa"
+    );
+    assert.notEqual(
+      tintaDaCelula(comandos, renderer, ...ACESA),
+      "#3d9bff",
+      "a faixa passou e a celula nao mudou de cor"
+    );
+    assert.equal(
+      tintaDaCelula(comandos, renderer, ...LONGE),
+      "#ff3b5c",
+      "a luz alcancou uma celula fora da faixa"
+    );
+
+    // A faixa anda: depois de passar, a celula volta a cor dela — o brilho e
+    // do EVENTO, nao um verniz que fica.
+    comandos.length = 0;
+    renderer.desenhar(1.2);
+    assert.equal(
+      tintaDaCelula(comandos, renderer, ...ACESA),
+      "#3d9bff",
+      "a faixa ficou parada: a celula continua acesa depois de ela passar"
+    );
   } finally {
     globalThis.window = anterior;
   }

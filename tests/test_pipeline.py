@@ -320,6 +320,44 @@ async def test_compartilhar_credita_tres(tmp_path):
     assert c.inventario.saldo("joao") == 3
 
 
+async def test_curtidas_geram_um_credito_no_log_do_painel(tmp_path):
+    """Todo credito deixa uma linha no cartao "Atividade" do painel.
+
+    O `amount` e o numero CRU do tipo: aqui, o TOTAL de curtidas da pessoa na
+    sala (`like_total`), nao o punhado que acabou de chegar. Num combo, o que
+    interessa a quem le o painel e o tamanho do combo ate agora.
+    """
+    c = await montar(tmp_path)
+
+    mensagens = await c.enviar(
+        EventType.LIKE, username="maria", like_delta=20, like_total=20
+    )
+    credito = primeira(mensagens, "credito")
+
+    await c.db.fechar()
+    assert credito is not None
+    assert credito["kind"] == "like"
+    assert credito["user"] == "@maria"
+    assert credito["amount"] == 20
+    assert credito["pixels"] == 1
+
+
+async def test_presente_gera_um_credito_no_log_do_painel(tmp_path):
+    c = await montar(tmp_path)
+
+    mensagens = await c.enviar(
+        EventType.GIFT, username="joao", gift_name="Rose", quantity=3
+    )
+    credito = primeira(mensagens, "credito")
+
+    await c.db.fechar()
+    assert credito is not None
+    assert credito["kind"] == "gift"
+    assert credito["amount"] == 3
+    assert credito["gift"] == "Rose"
+    assert credito["pixels"] == 3
+
+
 # --------------------------------------------------------------------------
 # Pintura por comentario
 # --------------------------------------------------------------------------
@@ -613,6 +651,76 @@ async def test_comando_de_cor_invalido_avisa_e_nao_muda(tmp_path):
     await c.db.fechar()
     assert "toast" in tipos(mensagens)
     assert pintura["color"] in PALETA.values()
+
+
+# --------------------------------------------------------------------------
+# Comando /pontos
+# --------------------------------------------------------------------------
+
+
+async def test_pontos_responde_o_saldo_de_quem_perguntou(tmp_path):
+    """O `/pontos` responde na tela o saldo de quem perguntou.
+
+    A pergunta chega pelo chat, e o jogo nao le o chat: o unico lugar onde a
+    resposta alcanca a pessoa e o telao. E ela vem com o NOME junto — numa
+    enxurrada de comentarios, "TEM 3 PIXELS" sem nome nao se sabe de quem e.
+    """
+    c = await montar(tmp_path)
+    c.creditar("joao", 3)
+
+    mensagens = await c.enviar(EventType.COMMENT, username="joao", text="/pontos")
+    aviso = primeira(mensagens, "toast")
+
+    await c.db.fechar()
+    assert aviso is not None
+    assert aviso["kind"] == "info"
+    assert "@joao" in aviso["text"]
+    assert "3 PIXELS" in aviso["text"]
+    assert c.inventario.saldo("joao") == 3, "perguntar o saldo nao pode gastar saldo"
+
+
+async def test_pontos_sem_saldo_ensina_o_caminho_gratis(tmp_path):
+    """Quem tem zero e quem mais precisa do resto da frase.
+
+    "0 PIXELS" sozinho fecha a porta: esta e a unica vez em que essa pessoa
+    olha para o proprio saldo, e o aviso tem que dizer como sair do zero.
+    """
+    c = await montar(tmp_path)
+
+    mensagens = await c.enviar(EventType.COMMENT, username="joao", text="/pontos")
+    aviso = primeira(mensagens, "toast")
+
+    await c.db.fechar()
+    assert "0 PIXELS" in aviso["text"]
+    assert "ROSA" in aviso["text"]
+
+
+async def test_pontos_aguenta_a_pontuacao_do_chat(tmp_path):
+    # Ninguem digita comando caprichado: "/pontos!" e a mesma pergunta.
+    c = await montar(tmp_path)
+    c.creditar("joao", 2)
+
+    mensagens = await c.enviar(EventType.COMMENT, username="joao", text="/pontos!")
+
+    await c.db.fechar()
+    assert "2 PIXELS" in primeira(mensagens, "toast")["text"]
+
+
+async def test_pontos_no_meio_da_frase_nao_e_comando(tmp_path):
+    """`/pontos` sozinho e comando; dentro de uma frase, e conversa.
+
+    Responder "quero /pontos pra mim" seria o jogo falando por cima da pessoa —
+    e a resposta chegaria errada, porque o saldo que ela quer e o dela.
+    """
+    c = await montar(tmp_path)
+    c.creditar("joao", 3)
+
+    mensagens = await c.enviar(
+        EventType.COMMENT, username="joao", text="quero /pontos pra mim"
+    )
+
+    await c.db.fechar()
+    assert mensagens == []
 
 
 # --------------------------------------------------------------------------

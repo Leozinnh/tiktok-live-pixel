@@ -369,13 +369,13 @@ select { font-family: inherit; }
 
 /* Listas ------------------------------------------------------------- */
 
-#ranking-lista, #feed-lista {
+#ranking-lista, #feed-lista, #atividade-lista {
   list-style: none;
   max-height: 340px;
   overflow-y: auto;
 }
 
-#ranking-lista li, #feed-lista li {
+#ranking-lista li, #feed-lista li, #atividade-lista li {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -395,6 +395,12 @@ select { font-family: inherit; }
   height: 15px;
   border-radius: 4px;
   flex: none;
+}
+
+/* O emoji do tipo de ganho, no lugar da amostra de cor das outras listas. */
+.como {
+  flex: none;
+  font-size: 15px;
 }
 
 .nome {

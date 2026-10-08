@@ -23,7 +23,7 @@ import {
   rotuloDaColuna,
 } from "./geometry.js";
 import { clarear, rgba } from "./effects.js";
-import { corDoArcoIris, desenharEvento, deslocamentoDoEvento } from "./eventos.js";
+import { corDaCelula, desenharEvento, deslocamentoDoEvento } from "./eventos.js";
 
 const FUNDO = "#05060a";
 const GRADE_VAZIA = "rgba(255, 255, 255, 0.045)";
@@ -279,13 +279,13 @@ export class Renderer {
     ctx.lineWidth = fino;
     ctx.stroke();
 
-    // O ARCO-IRIS nao desenha nada POR CIMA: ele troca a cor das celulas JA
-    // pintadas. A faixa antiga atravessava o quadro tapando o desenho — a
-    // audiencia via um retangulo colorido de passagem, e nao o pixel que tinha
-    // acabado de pagar. Aqui o desenho da comunidade vira o arco-iris, e o
-    // quadro vazio continua escuro.
-    const arcoIris = this.efeito === "arco_iris";
-
+    // Os efeitos de CELULA (ARCO-IRIS, BRILHO) nao desenham nada POR CIMA:
+    // trocam a cor das celulas JA pintadas. A faixa antiga do arco-iris
+    // atravessava o quadro tapando o desenho — a audiencia via um retangulo
+    // colorido de passagem, e nao o pixel que tinha acabado de pagar. Quem
+    // decide a cor de cada celula e `corDaCelula`; com um enfeite no ar (ou
+    // sem evento nenhum) ela devolve a cor da pessoa intacta.
+    //
     // As celulas pintadas usam as MESMAS fronteiras da linha. Se cada uma
     // calculasse o proprio tamanho a partir de `celula`, as duas contas
     // divergiriam por um pixel e apareceria um fio de fundo entre dois pixels
@@ -298,11 +298,10 @@ export class Renderer {
       const largura = xs[x + 1] - xs[x];
       const altura = ys[y + 1] - ys[y];
 
-      // Com o evento no ar a cor da celula e a do arco-iris; fora dele, a cor
-      // que a pessoa escolheu. Tudo o que a celula desenha (o brilho do efeito
-      // e o fio de cima) sai da MESMA variavel, para a celula nao sair com
-      // duas cores diferentes no meio de uma troca.
-      const cor = arcoIris ? corDoArcoIris(x, y, t) : dados.color;
+      // Tudo o que a celula desenha (o brilho do efeito e o fio de cima) sai
+      // da MESMA variavel, para a celula nao sair com duas cores diferentes
+      // no meio de uma troca.
+      const cor = corDaCelula(this.efeito, x, y, t, dados.color);
 
       ctx.fillStyle = cor;
       ctx.fillRect(px, py, largura, altura);

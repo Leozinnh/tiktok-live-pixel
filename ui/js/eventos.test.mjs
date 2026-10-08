@@ -6,10 +6,13 @@
  * dia, chegava inteiro no navegador, e ninguem lia. O ARCO-IRIS era um banner
  * com um contador e mais nada.
  *
- * Hoje sao dois tipos de efeito, e o teste separa os dois: os ENFEITES (o
- * clarao do CAOS, o alvo do DESAFIO) desenham por cima do quadro, e o
- * ARCO-IRIS nao desenha nada por cima — ele troca a cor das celulas pintadas,
- * e por isso a conta da cor dele e testada aqui, celula a celula.
+ * Hoje sao dois tipos de efeito, e o teste separa os dois:
+ *
+ * - os ENFEITES (o glitch do CAOS, a mira do DESAFIO, os riscos do TURBO)
+ *   desenham por cima do quadro;
+ * - os efeitos de CELULA (ARCO-IRIS, BRILHO) nao desenham nada por cima —
+ *   trocam a cor das celulas pintadas, e por isso a conta de cor deles e
+ *   testada aqui, celula a celula.
  *
  * Um canvas nao tem outra coisa observavel alem da sequencia de comandos que
  * ele recebe — entao e isso que o teste olha.
@@ -18,7 +21,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { corDoArcoIris, desenharEvento, deslocamentoDoEvento } from "./eventos.js";
+import {
+  corDaCelula,
+  corDoArcoIris,
+  desenharEvento,
+  deslocamentoDoEvento,
+} from "./eventos.js";
 
 const AREA = { x: 55, y: 111, w: 1000, h: 1020 };
 
@@ -57,7 +65,7 @@ function pinturas(comandos) {
 }
 
 test("cada ENFEITE pinta alguma coisa por cima do quadro", () => {
-  for (const efeito of ["caos", "desafio"]) {
+  for (const efeito of ["caos", "desafio", "rastro"]) {
     const { ctx, comandos } = contextoFalso();
     desenharEvento(ctx, efeito, AREA, 0.7);
 
@@ -68,24 +76,28 @@ test("cada ENFEITE pinta alguma coisa por cima do quadro", () => {
   }
 });
 
-test("o ARCO-IRIS nao pinta NADA por cima: quem muda de cor sao as celulas", () => {
+test("os efeitos de CELULA nao pintam NADA por cima: quem muda sao as celulas", () => {
   // O pedido que este teste protege: "o modo arco iris ainda fica passando uma
   // div pra la e pra ca, em vez de simplesmente mudar de cor os quadrados ja
   // pintados". Se alguem reintroduzir uma faixa por cima do quadro, ela
-  // reaparece aqui como comando de desenho — e o teste acusa.
-  for (const t of [0, 0.7, 3.1]) {
-    const { ctx, comandos } = contextoFalso();
-    desenharEvento(ctx, "arco_iris", AREA, t);
-    assert.deepEqual(
-      comandos,
-      [],
-      `com t=${t} o ARCO-IRIS mexeu no quadro por cima: ele so pode trocar a cor das celulas`
-    );
+  // reaparece aqui como comando de desenho — e o teste acusa. O BRILHO da
+  // HORA DO PIXEL e da mesma familia: a luz acende as celulas pintadas, nunca
+  // passa por cima delas.
+  for (const efeito of ["arco_iris", "brilho"]) {
+    for (const t of [0, 0.7, 3.1]) {
+      const { ctx, comandos } = contextoFalso();
+      desenharEvento(ctx, efeito, AREA, t);
+      assert.deepEqual(
+        comandos,
+        [],
+        `com t=${t} o ${efeito} mexeu no quadro por cima: ele so pode trocar a cor das celulas`
+      );
+    }
   }
 });
 
 test("o ENFEITE ANIMA: a tinta de agora nao e a de um segundo atras", () => {
-  for (const efeito of ["caos", "desafio"]) {
+  for (const efeito of ["caos", "desafio", "rastro"]) {
     const a = contextoFalso();
     const b = contextoFalso();
 
@@ -145,8 +157,75 @@ test("sem evento — ou com um efeito que ninguem conhece — nao pinta nada", (
   }
 });
 
+// --------------------------------------------------------------------------
+// Os efeitos de celula, pelo `corDaCelula`
+// --------------------------------------------------------------------------
+
+/** A soma dos canais de um hex — o quanto a cor e clara. */
+function claridade(hex) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return ((n >> 16) & 255) + ((n >> 8) & 255) + (n & 255);
+}
+
+test("sem efeito de celula a cor de quem pintou volta INTACTA", () => {
+  // A identidade e o contrato: com um enfeite no ar (ou sem evento nenhum) o
+  // renderer pergunta a cor celula a celula, e a resposta tem que ser
+  // exatamente a cor que a pessoa escolheu — nao um tom parecido.
+  for (const efeito of [null, undefined, "", "caos", "desafio", "rastro", "inventado"]) {
+    assert.equal(
+      corDaCelula(efeito, 3, 4, 0.5, "#3d9bff"),
+      "#3d9bff",
+      `o efeito ${JSON.stringify(efeito)} mexeu na cor de uma celula`
+    );
+  }
+});
+
+test("o ARCO-IRIS sai pelo corDaCelula igual a conta da matiz", () => {
+  assert.equal(corDaCelula("arco_iris", 3, 4, 0.5, "#3d9bff"), corDoArcoIris(3, 4, 0.5));
+});
+
+test("o BRILHO acende a celula sob a faixa — e so ela", () => {
+  const original = "#3d9bff";
+
+  // t=0: a faixa esta na diagonal 0. A celula (0,0) esta no miolo dela; a
+  // (10,10) esta longe.
+  const aceso = corDaCelula("brilho", 0, 0, 0, original);
+
+  assert.notEqual(aceso, original, "a celula sob a faixa saiu com a cor de sempre");
+  assert.ok(
+    claridade(aceso) > claridade(original),
+    `a faixa ESCURECEU a celula: ${aceso} e mais escura que ${original}`
+  );
+  assert.match(aceso, /^#[0-9a-f]{6}$/, "a cor do brilho nao saiu hex");
+
+  assert.equal(
+    corDaCelula("brilho", 10, 10, 0, original),
+    original,
+    "a luz acendeu uma celula FORA da faixa"
+  );
+});
+
+test("a faixa do BRILHO atravessa: a mesma celula sai do sol", () => {
+  const original = "#3d9bff";
+  assert.notEqual(corDaCelula("brilho", 0, 0, 0, original), original, "no inicio, (0,0) esta sob a luz");
+
+  // 1,2s depois a faixa ja andou ~11 celulas e deixou a (0,0) para tras.
+  assert.equal(
+    corDaCelula("brilho", 0, 0, 1.2, original),
+    original,
+    "a faixa ficou parada: a celula continua acesa depois de ela passar"
+  );
+  // E quem esta na posicao nova acende. A faixa anda para a direita na
+  // diagonal, entao a celula vizinha de onde ela estava e a proxima a acender.
+  assert.notEqual(
+    corDaCelula("brilho", 5, 5, 1.2, original),
+    original,
+    "a faixa nao chegou na diagonal seguinte"
+  );
+});
+
 test("so o CAOS treme a tela, e ele treme mesmo", () => {
-  for (const efeito of [null, "arco_iris", "desafio", "inventado"]) {
+  for (const efeito of [null, "arco_iris", "brilho", "desafio", "rastro", "inventado"]) {
     assert.deepEqual(
       deslocamentoDoEvento(efeito, 0.8),
       { dx: 0, dy: 0 },

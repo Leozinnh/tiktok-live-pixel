@@ -32,7 +32,7 @@ CATALOGO_PADRAO = (
         "duration": 30.0,
         "multiplier": 2.0,
         "weight": 3.0,
-        "effect": None,
+        "effect": "brilho",
     },
     {
         "key": "arco_iris",
@@ -50,7 +50,7 @@ CATALOGO_PADRAO = (
         "duration": 30.0,
         "multiplier": 3.0,
         "weight": 3.0,
-        "effect": None,
+        "effect": "rastro",
     },
     {
         "key": "caos",

@@ -113,6 +113,7 @@ async function atualizar() {
 
   desenharRanking(dados.ranking || []);
   desenharFeed(dados.feed || []);
+  desenharAtividade(dados.atividade || []);
   desenharEvento(dados.event);
   desenharUsuarios(dados);
   atualizarBotoes(dados.modo_teste, fonte);
@@ -172,6 +173,36 @@ function desenharFeed(itens) {
         <span class="nome">${escapar(item.user)}</span>
       </li>`
     )
+    .join("");
+}
+
+// Como cada tipo de ganho se le no painel. O servidor manda o numero CRU
+// (`amount`, no total de curtidas da pessoa na sala) e o tipo; a frase fica
+// aqui, que e quem sabe qual emoji e qual verbo usar.
+const GANHOS = {
+  gift: { emoji: "🌹", texto: (i) => `mandou ${i.amount}× ${i.gift || "presente"}` },
+  like: { emoji: "❤️", texto: (i) => `${i.amount} curtida${i.amount === 1 ? "" : "s"}` },
+  follow: { emoji: "➕", texto: () => "seguiu" },
+  share: { emoji: "🔁", texto: () => "compartilhou" },
+};
+
+function desenharAtividade(itens) {
+  const lista = $("atividade-lista");
+  if (!itens.length) {
+    lista.innerHTML = '<li style="color:#8b9ab8">os ganhos de pixels aparecem aqui</li>';
+    return;
+  }
+
+  lista.innerHTML = itens
+    .map((item) => {
+      const ganho = GANHOS[item.kind] || GANHOS.share;
+      return `
+      <li>
+        <span class="como">${ganho.emoji}</span>
+        <span class="nome">${escapar(item.user)} · ${escapar(ganho.texto(item))}</span>
+        <span class="num">+${Number(item.pixels) || 0}</span>
+      </li>`;
+    })
     .join("");
 }
 

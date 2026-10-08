@@ -100,9 +100,9 @@
     "first_after": 75,
 
     "catalog": [
-      { "key": "hora_do_pixel", "name": "HORA DO PIXEL", "emoji": "🎨", "duration": 30, "multiplier": 2.0, "weight": 3.0, "effect": null },
+      { "key": "hora_do_pixel", "name": "HORA DO PIXEL", "emoji": "🎨", "duration": 30, "multiplier": 2.0, "weight": 3.0, "effect": "brilho" },
       { "key": "arco_iris",     "name": "ARCO-ÍRIS",     "emoji": "🌈", "duration": 60, "multiplier": 1.0, "weight": 2.0, "effect": "arco_iris" },
-      { "key": "pixel_turbo",   "name": "PIXEL TURBO",   "emoji": "⚡", "duration": 30, "multiplier": 3.0, "weight": 3.0, "effect": null },
+      { "key": "pixel_turbo",   "name": "PIXEL TURBO",   "emoji": "⚡", "duration": 30, "multiplier": 3.0, "weight": 3.0, "effect": "rastro" },
       { "key": "caos",          "name": "CAOS",          "emoji": "💥", "duration": 20, "multiplier": 1.5, "weight": 1.0, "effect": "caos" },
       { "key": "desafio",       "name": "DESAFIO",       "emoji": "🎯", "duration": 45, "multiplier": 1.0, "weight": 1.0, "effect": "desafio" }
     ]

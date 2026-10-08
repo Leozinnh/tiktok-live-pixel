@@ -55,6 +55,25 @@ MAX_POR_COMENTARIO_PADRAO = 100
 
 TEXTO_NAO_ENTENDI = "NAO ENTENDI — ESCREVA LETRA + NUMERO, EX: H5"
 
+COMANDO_PONTOS = "/pontos"
+
+
+def _eh_comando_pontos(texto: str) -> bool:
+    """O comentario INTEIRO e o comando `/pontos`, ou nada.
+
+    Comentario que so COMECA com o comando nao vale: "/pontos pra mim" e uma
+    frase no meio da conversa, e responder seria o jogo falando por cima da
+    pessoa. A pontuacao do fim cai junto ("/pontos!", "/pontos.") — ninguem
+    digita comando caprichado.
+
+    A comparacao e feita aqui e nao no parser de coordenadas porque `/pontos`
+    nao pede nada do quadro: ele so pergunta um numero que o inventario ja
+    sabe. Mandar isso para o parser de pintura faria o comando depender do
+    tamanho do canvas, e um comando de leitura nao tem nada a ver com a grade.
+    """
+    limpo = (texto or "").strip().lower().rstrip("!?.,")
+    return limpo == COMANDO_PONTOS
+
 
 def _pecas_ilegiveis(invalidas: list[str]) -> str:
     """As pecas que nao deram para ler, do jeito que a pessoa escreveu.
@@ -205,6 +224,7 @@ class Pipeline:
                 "handle": handle,
                 "saldo": self.inventario.saldo(handle),
             },
+            self._atividade(evento, handle, pixels),
         ]
 
     # ------------------------------------------------------------------
@@ -230,6 +250,13 @@ class Pipeline:
         cor = parse_cor(texto, self.paleta, self.especiais)
         if cor is not None:
             return await self._trocar_cor(evento, handle, cor)
+
+        # O `/pontos` vem ANTES do "nao entendi" porque comeca com barra — o
+        # mesmo sinal que faz `parece_pintura` achar que alguem tentou pintar.
+        # Sem esta linha, quem pedisse o saldo receberia "NAO ENTENDI: ESCREVA
+        # LETRA + NUMERO", que e a resposta errada para uma pergunta certa.
+        if _eh_comando_pontos(texto):
+            return [self._responder_pontos(handle)]
 
         if parece_pintura(texto):
             return [self._erro(TEXTO_NAO_ENTENDI)]
@@ -382,17 +409,68 @@ class Pipeline:
         telao para a live inteira, e "SEM PIXELS" sem nome parece recado de
         ninguem: quem mandou o desenho fica sem saber que a resposta e para
         ela — e o nome e o que transforma o aviso em resposta.
-
-        A segunda metade e o caminho GRATIS. A curtida tambem rende pixel
-        (`rewards.like.curtidas_por_pixel`), e quem nao manda presente precisa
-        ouvir isso do jogo, nao adivinhar.
         """
         if motivo != MOTIVO_SALDO:
             return motivo_legivel(motivo)
-        return (
-            f"SEM PIXELS — {autor}, MANDE UMA ROSA 🌹"
-            f" OU CURTA {self._curtidas.por_pixel}x"
-        )
+        return f"SEM PIXELS — {autor}, {self._caminho_gratis()}"
+
+    def _caminho_gratis(self) -> str:
+        """Como conseguir pixel sem mandar presente nenhum.
+
+        A curtida tambem rende (`rewards.like.curtidas_por_pixel`), e quem
+        chegou ao fim do saldo — ou nunca teve nenhum — precisa ouvir isso do
+        jogo, nao adivinhar. Fica numa funcao so porque DOIS avisos usam a
+        mesma frase: o de quem nao conseguiu pintar e o do `/pontos` de saldo
+        zero. Duas copias divergiriam na primeira vez que o numero mudasse.
+        """
+        return f"MANDE UMA ROSA 🌹 OU CURTA {self._curtidas.por_pixel}x"
+
+    def _responder_pontos(self, handle: str) -> dict:
+        """A resposta do `/pontos`: o saldo de quem perguntou.
+
+        O saldo e o numero que a audiencia pergunta de verdade no chat — e a
+        pergunta chega no chat, nao no jogo, entao a resposta sai no telao para
+        quem perguntou (e para quem tiver a mesma duvida logo depois).
+
+        Quem tem ZERO ouve o caminho gratis junto: este e o unico momento em
+        que essa pessoa olha para o proprio saldo, e "0 PIXELS" sozinho nao
+        ensina como sair do zero.
+        """
+        saldo = self.inventario.saldo(handle)
+        unidade = "PIXEL" if saldo == 1 else "PIXELS"
+        texto = f"⭐ @{handle} TEM {saldo} {unidade}"
+        if saldo <= 0:
+            texto += f" — {self._caminho_gratis()}"
+        return {"type": "toast", "kind": "info", "text": texto}
+
+    def _atividade(self, evento: LiveEvent, handle: str, pixels: int) -> dict:
+        """A linha do cartao "Atividade" do painel: quem ganhou, e como.
+
+        E o log que o streamer le ao vivo — presente, combo de curtidas,
+        seguidor, compartilhamento —, e por isso ele vai estruturado, com o
+        numero cru de cada tipo: a quantidade do presente, o TOTAL de curtidas
+        da pessoa na sala (`like_total`; num combo isso e o tamanho do combo),
+        e o que aquilo virou em pixels. Quem monta a frase e o painel, que e
+        quem sabe que emoji e que verbo usar.
+        """
+        if evento.type == EventType.GIFT:
+            kind, amount = "gift", int(evento.quantity or 1)
+        elif evento.type == EventType.LIKE:
+            kind, amount = "like", int(evento.like_total or evento.like_delta or 0)
+        elif evento.type == EventType.FOLLOW:
+            kind, amount = "follow", 1
+        else:
+            kind, amount = "share", 1
+
+        return {
+            "type": "credito",
+            "kind": kind,
+            "user": f"@{handle}",
+            "gift": evento.gift_name or "",
+            "amount": amount,
+            "pixels": pixels,
+            "saldo": self.inventario.saldo(handle),
+        }
 
     def _cor_de(self, handle: str) -> Cor:
         """A cor (e o efeito) com que esta pessoa pinta agora."""

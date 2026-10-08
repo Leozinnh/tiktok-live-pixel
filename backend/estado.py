@@ -42,6 +42,12 @@ TAMANHO_DO_RANKING = 5
 EVENTOS_POR_FRAME_PADRAO = 400
 TAMANHO_DO_FEED_PADRAO = 6
 
+# O tamanho do log de ganhos do painel. Nao vem do `config.json` de proposito:
+# o feed tem config porque ele aparece no TELAO, onde cada linha ocupa lugar no
+# video; este so existe para o streamer, na bancada, e 12 linhas cobrem o que
+# aconteceu no ultimo minuto de uma live movimentada.
+ATIVIDADE_MAX = 12
+
 
 class EstadoJogo:
     """Monta o jogo inteiro e cuida do ciclo de vida dele."""
@@ -122,6 +128,11 @@ class EstadoJogo:
         self.feed: deque[dict] = deque(
             maxlen=max(1, int(app_cfg.get("feed_size") or TAMANHO_DO_FEED_PADRAO))
         )
+        # O log de GANHOS (presente, curtida, seguidor, share), que o painel
+        # mostra no cartao "Atividade". Fica aqui e nao no banco porque e um
+        # retrato do AGORA: reiniciar o servidor nao pode ressuscitar um combo
+        # de curtidas de ontem no meio do painel.
+        self.atividade: deque[dict] = deque(maxlen=ATIVIDADE_MAX)
 
         self._tarefa: asyncio.Task | None = None
         self._aberto = False
@@ -219,6 +230,8 @@ class EstadoJogo:
             for mensagem in mensagens:
                 if mensagem.get("type") == "feed":
                     self.feed.appendleft(mensagem)
+                elif mensagem.get("type") == "credito":
+                    self.atividade.appendleft(mensagem)
                 elif mensagem.get("type") == "pixel_painted":
                     pintou = True
                 self.hub.publicar(mensagem)
@@ -295,6 +308,10 @@ class EstadoJogo:
             "colors": len({c.color for c in self.canvas.celulas_pintadas()}),
             "ranking": self.ranking.top_para_dict(),
             "feed": list(self.feed),
+            # O log de ganhos fica so no painel: o telao ja mostra o mesmo
+            # fato como toast no momento em que acontece, e repetir a lista
+            # ala seria ocupar o video com o que o streamer ja sabe.
+            "atividade": list(self.atividade),
             "fonte": {
                 "connected": self.fonte.status.connected,
                 "detail": self.fonte.status.detail,
