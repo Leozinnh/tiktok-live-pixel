@@ -27,6 +27,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { corDoArcoIris } from "./eventos.js";
 import { Renderer } from "./renderer.js";
 
 const LARGURA = 1080;
@@ -83,8 +84,10 @@ function contextoFalso() {
       clearRect: (x, y, largura, altura) => {
         comandos.push(["clearRect", caixa(x, y, largura, altura)]);
       },
-      fillRect: (x, y, largura, altura) => {
-        comandos.push(["fillRect", caixa(x, y, largura, altura)]);
+      // A tinta vai junto: e por ela que o teste do ARCO-IRIS pergunta de que
+      // cor uma celula saiu neste quadro.
+      fillRect: function (x, y, largura, altura) {
+        comandos.push(["fillRect", caixa(x, y, largura, altura), this.fillStyle]);
       },
       createRadialGradient: () => ({ addColorStop() {} }),
       beginPath: anotar("beginPath"),
@@ -295,5 +298,81 @@ test("o fundo pinta o quadro INTEIRO, em qualquer dpr", () => {
       `com dpr ${dpr} nenhum fundo cobriu o canvas de ${canvas.width}x` +
         `${canvas.height}: ${fundos.map(tamanho).join(" | ")}`
     );
+  }
+});
+
+/**
+ * O pedido que este teste protege: "o modo arco iris ainda fica passando uma
+ * div pra la e pra ca, em vez de simplesmente ficar mudando de cor os
+ * quadrados ja pintados".
+ *
+ * Quem muda de cor sao as celulas JA pintadas: o desenho da comunidade vira o
+ * arco-iris, o quadro vazio continua escuro, e a cor de uma celula nao e a da
+ * vizinha — varias cores na tela ao mesmo tempo, que e o que o nome do evento
+ * promete.
+ */
+test("no ARCO-IRIS quem muda de cor sao as celulas ja pintadas", () => {
+  const anterior = globalThis.window;
+  globalThis.window = { devicePixelRatio: 1 };
+
+  try {
+    const { ctx, comandos } = contextoFalso();
+    const canvas = { width: 0, height: 0, style: {}, getContext: () => ctx };
+    const renderer = new Renderer(canvas);
+    const CELULA = [3, 4];
+    const VIZINHA = [4, 4];
+    renderer.definirCanvas(25, 26, [
+      { x: CELULA[0], y: CELULA[1], color: "#ff3b5c" },
+      { x: VIZINHA[0], y: VIZINHA[1], color: "#ff3b5c" },
+    ]);
+    renderer.redimensionar(1080, 1220);
+
+    const { xs, ys } = renderer.bordas();
+
+    /** A tinta com que a celula (x,y) foi preenchida neste quadro. */
+    const tintaDaCelula = (x, y) => {
+      const tinta = comandos.find(
+        (c) =>
+          c[0] === "fillRect" &&
+          c[1].x0 === xs[x] &&
+          c[1].y0 === ys[y] &&
+          c[1].x1 === xs[x + 1] &&
+          c[1].y1 === ys[y + 1]
+      );
+      return tinta && tinta[2];
+    };
+
+    renderer.efeito = "arco_iris";
+    renderer.desenhar(0);
+
+    assert.equal(
+      tintaDaCelula(...CELULA),
+      corDoArcoIris(...CELULA, 0),
+      "a celula pintada nao saiu com a cor do arco-iris"
+    );
+    assert.equal(tintaDaCelula(0, 0), undefined, "o quadro vazio ganhou cor do arco-iris");
+
+    comandos.length = 0;
+    renderer.desenhar(0.5);
+
+    assert.notEqual(
+      tintaDaCelula(...CELULA),
+      corDoArcoIris(...CELULA, 0),
+      "meio segundo depois a celula esta da mesma cor: o arco-iris ficou parado"
+    );
+    assert.notEqual(
+      tintaDaCelula(...CELULA),
+      tintaDaCelula(...VIZINHA),
+      "duas celulas vizinhas saem da mesma cor: o desenho pisca de uma cor so"
+    );
+
+    // Sem evento, a celula volta a cor dela: o arco-iris e do EVENTO, nao da
+    // celula. Se a cor ficasse, o desenho da comunidade nunca mais voltaria.
+    comandos.length = 0;
+    renderer.efeito = null;
+    renderer.desenhar(0.9);
+    assert.equal(tintaDaCelula(...CELULA), "#ff3b5c");
+  } finally {
+    globalThis.window = anterior;
   }
 });

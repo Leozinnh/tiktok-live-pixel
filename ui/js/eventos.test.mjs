@@ -6,16 +6,19 @@
  * dia, chegava inteiro no navegador, e ninguem lia. O ARCO-IRIS era um banner
  * com um contador e mais nada.
  *
+ * Hoje sao dois tipos de efeito, e o teste separa os dois: os ENFEITES (o
+ * clarao do CAOS, o alvo do DESAFIO) desenham por cima do quadro, e o
+ * ARCO-IRIS nao desenha nada por cima — ele troca a cor das celulas pintadas,
+ * e por isso a conta da cor dele e testada aqui, celula a celula.
+ *
  * Um canvas nao tem outra coisa observavel alem da sequencia de comandos que
- * ele recebe — entao e isso que o teste olha. As tres perguntas sao as que
- * importam: o efeito DESENHA, ele ANIMA, e um evento sem efeito nao pinta
- * nada por cima do quadro.
+ * ele recebe — entao e isso que o teste olha.
  */
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { desenharEvento, deslocamentoDoEvento } from "./eventos.js";
+import { corDoArcoIris, desenharEvento, deslocamentoDoEvento } from "./eventos.js";
 
 const AREA = { x: 55, y: 111, w: 1000, h: 1020 };
 
@@ -53,8 +56,8 @@ function pinturas(comandos) {
     .map((c) => c.join(" "));
 }
 
-test("cada efeito pinta alguma coisa por cima do quadro", () => {
-  for (const efeito of ["arco_iris", "caos", "desafio"]) {
+test("cada ENFEITE pinta alguma coisa por cima do quadro", () => {
+  for (const efeito of ["caos", "desafio"]) {
     const { ctx, comandos } = contextoFalso();
     desenharEvento(ctx, efeito, AREA, 0.7);
 
@@ -65,8 +68,24 @@ test("cada efeito pinta alguma coisa por cima do quadro", () => {
   }
 });
 
-test("o efeito ANIMA: a tinta de agora nao e a de um segundo atras", () => {
-  for (const efeito of ["arco_iris", "caos", "desafio"]) {
+test("o ARCO-IRIS nao pinta NADA por cima: quem muda de cor sao as celulas", () => {
+  // O pedido que este teste protege: "o modo arco iris ainda fica passando uma
+  // div pra la e pra ca, em vez de simplesmente mudar de cor os quadrados ja
+  // pintados". Se alguem reintroduzir uma faixa por cima do quadro, ela
+  // reaparece aqui como comando de desenho — e o teste acusa.
+  for (const t of [0, 0.7, 3.1]) {
+    const { ctx, comandos } = contextoFalso();
+    desenharEvento(ctx, "arco_iris", AREA, t);
+    assert.deepEqual(
+      comandos,
+      [],
+      `com t=${t} o ARCO-IRIS mexeu no quadro por cima: ele so pode trocar a cor das celulas`
+    );
+  }
+});
+
+test("o ENFEITE ANIMA: a tinta de agora nao e a de um segundo atras", () => {
+  for (const efeito of ["caos", "desafio"]) {
     const a = contextoFalso();
     const b = contextoFalso();
 
@@ -81,6 +100,36 @@ test("o efeito ANIMA: a tinta de agora nao e a de um segundo atras", () => {
       tintaB,
       `o efeito ${efeito} desenha a mesma coisa em todo instante: virou um adesivo`
     );
+  }
+});
+
+test("a cor do ARCO-IRIS anima: a celula de agora nao e a de um segundo atras", () => {
+  assert.notEqual(
+    corDoArcoIris(3, 4, 0),
+    corDoArcoIris(3, 4, 1),
+    "a celula ficou da mesma cor com o tempo passando: o arco-iris virou um adesivo"
+  );
+});
+
+test("a cor do ARCO-IRIS sai da POSICAO: duas celulas vizinhas nao sao gemeas", () => {
+  // Se a cor dependesse da ordem de pintura (ou fosse uma so para o quadro
+  // inteiro), o desenho inteiro piscaria junto, de uma cor so. O arco-iris
+  // precisa de varias cores na tela AO MESMO TEMPO.
+  assert.notEqual(corDoArcoIris(3, 4, 0.5), corDoArcoIris(4, 4, 0.5));
+  assert.notEqual(corDoArcoIris(3, 4, 0.5), corDoArcoIris(3, 5, 0.5));
+});
+
+test("a cor do ARCO-IRIS e um hex de verdade, em qualquer instante", () => {
+  // Quem desenha a celula passa esta cor por `clarear` e `rgba`, que so sabem
+  // ler hex: um "hsl(...)" aqui viraria BRANCO nas duas.
+  for (const t of [0, 0.31, 1.7, 12.9, 359.99, 1000]) {
+    for (const [x, y] of [[0, 0], [24, 25], [7, 19]]) {
+      assert.match(
+        corDoArcoIris(x, y, t),
+        /^#[0-9a-f]{6}$/,
+        `corDoArcoIris(${x}, ${y}, ${t}) nao saiu hex`
+      );
+    }
   }
 });
 
