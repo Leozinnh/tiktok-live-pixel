@@ -1,0 +1,417 @@
+/*
+ * O painel do operador.
+ *
+ * Nada aqui e para o publico: e uma bancada de trabalho. Fonte grande porque
+ * o streamer esta lendo de longe, contraste alto porque a sala costuma estar
+ * com a luz apagada, e nenhuma animacao porque a pagina fica aberta ao lado
+ * da LIVE o dia inteiro.
+ */
+
+:root {
+  --fundo: #0b0f18;
+  --cartao: #131a28;
+  --cartao-2: #1a2333;
+  --borda: #26324a;
+  --texto: #e4ecfb;
+  --fraco: #8b9ab8;
+  --ciano: #3fe0ff;
+  --verde: #3aff9e;
+  --amarelo: #ffd93d;
+  --rosa: #ff4f8b;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  padding: 18px;
+  min-height: 100vh;
+}
+
+/* ------------------------------------------------------------------ */
+/* Barra do topo                                                       */
+/* ------------------------------------------------------------------ */
+
+#barra {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  padding: 14px 22px;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  background: var(--cartao);
+  margin-bottom: 16px;
+  position: sticky;
+  top: 12px;
+  z-index: 10;
+}
+
+#barra h1 {
+  font-size: 21px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+#barra h1 span {
+  color: var(--fraco);
+  font-weight: 400;
+  letter-spacing: 0;
+  font-size: 16px;
+  margin-left: 6px;
+}
+
+.medidores { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.medidor {
+  min-width: 96px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: var(--cartao-2);
+  border: 1px solid var(--borda);
+  text-align: center;
+}
+
+.medidor b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.medidor small {
+  color: var(--fraco);
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+#m-modo b { color: var(--amarelo); }
+#m-fonte b { color: var(--ciano); }
+
+#vivo {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  color: var(--fraco);
+}
+
+#vivo .luz {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555;
+}
+
+#vivo.vivo .luz { background: var(--verde); box-shadow: 0 0 10px var(--verde); }
+#vivo.morto .luz { background: var(--rosa); box-shadow: 0 0 10px var(--rosa); }
+
+/* ------------------------------------------------------------------ */
+/* Erro                                                                */
+/* ------------------------------------------------------------------ */
+
+#erro {
+  margin-bottom: 16px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--rosa);
+  background: rgba(255, 79, 139, 0.12);
+  color: #ffd0e0;
+  font-size: 16px;
+  white-space: pre-wrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cartoes                                                             */
+/* ------------------------------------------------------------------ */
+
+#grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.cartao {
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 18px 20px 20px;
+}
+
+.cartao h2 {
+  font-size: 17px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.dica {
+  color: var(--fraco);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.dica b { color: var(--texto); }
+
+/* Campos ------------------------------------------------------------- */
+
+.campo { margin-bottom: 12px; }
+
+.campo label,
+.rajada label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--fraco);
+  margin-bottom: 5px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 13px;
+  font-size: 16px;
+  font-family: var(--mono);
+  color: var(--texto);
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 9px;
+  outline: none;
+}
+
+input:focus, select:focus { border-color: var(--ciano); }
+
+select { font-family: inherit; }
+
+.linha {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.linha input { flex: 1; }
+.linha input[type="number"] { max-width: 130px; }
+
+/* Botoes ------------------------------------------------------------- */
+
+.acao {
+  padding: 11px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #04121c;
+  background: var(--ciano);
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.acao:hover { filter: brightness(1.12); }
+.acao:active { transform: translateY(1px); }
+
+.acao.secundaria {
+  background: var(--cartao-2);
+  color: var(--texto);
+  border: 1px solid var(--borda);
+}
+
+.acao.perigo {
+  background: var(--rosa);
+  color: #2a0013;
+}
+
+.acao:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.linha .acao { width: auto; margin-top: 0; flex: none; }
+
+.mini {
+  padding: 7px 14px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--texto);
+  background: var(--cartao-2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mini:hover { border-color: var(--ciano); }
+
+.atalhos, .atalhos-negrito {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+.atalhos .mini { padding: 4px 10px; font-size: 12.5px; }
+
+/* Rajada ------------------------------------------------------------- */
+
+.rajada {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--borda);
+}
+
+.rajada small {
+  display: block;
+  margin-top: 8px;
+  color: var(--fraco);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* Eventos ------------------------------------------------------------ */
+
+#botoes-evento { flex-wrap: wrap; }
+
+.botao-evento {
+  font-family: inherit;
+  padding: 9px 15px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--texto);
+  background: var(--cartao-2);
+  border: 1px solid var(--borda);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.botao-evento:hover { border-color: var(--amarelo); color: var(--amarelo); }
+
+#evento-ativo {
+  margin-top: 12px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  background: rgba(255, 217, 61, 0.10);
+  border: 1px solid rgba(255, 217, 61, 0.35);
+  font-size: 15px;
+}
+
+.vazio {
+  margin-top: 12px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  background: var(--fundo);
+  color: var(--fraco);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Pixel -------------------------------------------------------------- */
+
+#pixel-detalhe { font-style: normal; }
+
+.pixel-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pixel-cor {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.pixel-coord {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--amarelo);
+}
+
+.historico {
+  list-style: none;
+  margin-top: 10px;
+  border-top: 1px solid var(--borda);
+  padding-top: 10px;
+}
+
+.historico li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13.5px;
+  padding: 4px 0;
+  color: var(--fraco);
+}
+
+.historico .quando {
+  font-family: var(--mono);
+  font-size: 12px;
+  min-width: 76px;
+}
+
+.historico .quem { color: var(--texto); }
+
+/* Listas ------------------------------------------------------------- */
+
+#ranking-lista, #feed-lista {
+  list-style: none;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+#ranking-lista li, #feed-lista li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(38, 50, 74, 0.6);
+  font-size: 15px;
+}
+
+.pos {
+  font-family: var(--mono);
+  color: var(--fraco);
+  min-width: 22px;
+}
+
+.amostra {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  flex: none;
+}
+
+.nome {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.num {
+  font-family: var(--mono);
+  color: var(--ciano);
+  font-weight: 700;
+}
+
+.coord {
+  font-family: var(--mono);
+  color: var(--amarelo);
+  font-weight: 700;
+  min-width: 48px;
+}
+
+@media (max-width: 720px) {
+  #grade { grid-template-columns: 1fr; }
+  #barra { position: static; }
+}

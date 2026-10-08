@@ -1,0 +1,639 @@
+/*
+ * A tela que vai ao ar.
+ *
+ * Regra que governa o arquivo inteiro: TUDO e escrito em medidas nominais de
+ * projeto (o cabecalho tem 140px, o titulo 54px, o rodape 560px) e nenhuma
+ * delas vem da janela. Quem negocia com a janela sao so duas variaveis, as
+ * duas escritas por `app.js` a cada `resize`: `--escala` encolhe ou estica o
+ * palco inteiro de uma vez, e `--largura-projeto` diz quanto de ARENA cabe.
+ * Fora dessas duas, um `@media` aqui seria um bug esperando para aparecer: no
+ * dia em que a janela nao for 1080x1920, a composicao sairia diferente da que
+ * foi aprovada.
+ */
+
+:root {
+  --fundo: #05060a;
+  --fundo-2: #0a0e18;
+  --painel: rgba(14, 20, 34, 0.72);
+  --borda: rgba(90, 150, 220, 0.18);
+  --texto: #dce8ff;
+  --texto-fraco: #7d8db3;
+  --ciano: #38f5ff;
+  --rosa: #ff3f8e;
+  --amarelo: #ffd93d;
+
+  /* A TINTA DA LEITURA.
+     O quadro e a comunidade sao frios — ciano, rosa, o azul do fundo. A
+     coordenada e a MEDIDA, e medida se imprime em outra tinta. E a regra de
+     carta topografica: o terreno numa cor, a grade de referencia em outra, e
+     ninguem confunde a margem com o desenho.
+     Isto aqui e a mesma cor que o `renderer.js` usa na regua. Se um dia
+     divergirem, a coordenada do feed deixa de ser a mesma coisa que a
+     coordenada da tela — que e o produto inteiro. */
+  --regua: #ffc14d;
+  --regua-fraca: rgba(255, 193, 77, 0.34);
+  --regua-fundo: rgba(255, 193, 77, 0.05);
+
+  /* Duas familias, e so duas.
+     `Bahnschrift` e a grotesca tecnica da DIN que vem no Windows: e o que da
+     o tom de painel de instrumento, e nao o de aplicativo. `Cascadia Mono` e
+     a monoespacada do mesmo sistema, usada onde o que importa e o ALINHAMENTO
+     dos caracteres — coordenada, numero, contador — porque digitos de largura
+     fixa deixam as unidades na mesma coluna e a leitura vira escala.
+     Nenhuma das duas vem da rede: a maquina do OBS pode estar sem internet. */
+  --fonte: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Display",
+    "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+
+  /* Dois raios, com hierarquia: a placa e o que esta DENTRO dela. Um raio so
+     para tudo e o jeito mais rapido de a tela parecer um kit de cartoes. */
+  --raio: 6px;
+  --raio-interno: 3px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: var(--fonte);
+  color: var(--texto);
+  /* Numa tela de LIVE ninguem seleciona nada; selecionar so cria um retangulo
+     azul feio quando alguem passa o mouse. */
+  user-select: none;
+  cursor: none;
+}
+
+/* O palco: 1920 de altura de projeto e a LARGURA que a janela pedir, escalado
+   por `transform` (barato, nao reflowa) para preencher a janela inteira.
+
+   A altura e fixa e a largura e variavel, e nao o contrario, porque tudo que
+   esta dentro e uma fracao da ALTURA: o cabecalho tem 140px, o rodape 560px, e
+   a arena e o resto. Com a altura fixa a composicao vertical sai identica em
+   qualquer janela. O que sobra de largura vira arena, e a grade se centra nela.
+
+   `--largura-projeto` e `--escala` saem os dois de `escalaParaCaber`, e a
+   escolha deles e o que faz a pagina cobrir a janela SEM faixa preta e SEM
+   cortar nada:
+
+     escala * 1920            = altura da janela
+     escala * largura-projeto = largura da janela
+
+   O centro cai no centro da janela por POSICAO, nao por alinhamento de grade.
+   `place-items: center` no body nao resolvia: uma linha de grade `auto` cresce
+   ate o tamanho do proprio item, entao o palco ficava pendurado no meio da
+   pagina, com metade abaixo da dobra — a grade aparecia cortada no rodape. E o
+   `transform` so mexe nos PIXELS desenhados: o layout continua medindo o
+   tamanho nominal, e por isso quem centraliza e a margem, nao o alinhamento.
+   No OBS, que tem exatamente 1080x1920, os dois dao o palco nominal. */
+#palco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: calc(-0.5 * var(--largura-projeto, 1080px));
+  margin-top: -960px;
+  width: var(--largura-projeto, 1080px);
+  height: 1920px;
+  display: grid;
+  /* A arena e `1fr`, nao um numero fixo: o rodape cresce e encolhe conforme o
+     banner de evento aparece, e a arena absorve a diferenca. Com um valor
+     fixo aqui, a rodape com banner empurrava o ranking para fora da tela. */
+  grid-template-rows: 140px 1fr 560px;
+  background:
+    radial-gradient(1200px 900px at 50% 22%, rgba(30, 70, 130, 0.28), transparent 70%),
+    radial-gradient(900px 700px at 80% 90%, rgba(255, 63, 142, 0.10), transparent 70%),
+    var(--fundo);
+  transform-origin: center center;
+  transform: scale(var(--escala, 1));
+  overflow: hidden;
+}
+
+/* Um grão finissimo por cima de tudo: tira o aspecto "cor chapada" de
+   gradiente digital e nao custa um byte de imagem. */
+#palco::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image:
+    repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
+  z-index: 50;
+}
+
+/* ------------------------------------------------------------------ */
+/* Topo                                                                */
+/* ------------------------------------------------------------------ */
+
+#topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  border-bottom: 1px solid var(--borda);
+  background: linear-gradient(180deg, rgba(12, 20, 36, 0.9), rgba(5, 6, 10, 0));
+}
+
+/* O nome e a escala, na mesma linha e na mesma base.
+   O `baseline` e o que faz a nota de escala sentar no PE do nome em vez de
+   flutuar ao lado dele — alinhados por centro, os dois parecem dois textos
+   vizinhos; pela base, parecem um so campo impresso. */
+#marca-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+}
+
+#marca h1 {
+  /* Sem espacamento entre letras. Os 6px de antes davam aquele ar de letreiro
+     de LED, que e o que qualquer tela de jogo faz — e o que fazia o nome
+     parecer um cartaz em vez de uma chapa gravada. Uma grotesca tecnica
+     pede letras ENCOSTADAS. */
+  font-size: 52px;
+  letter-spacing: 0;
+  font-weight: 700;
+  line-height: 1;
+  /* Sem halo.
+     Havia um borrao ciano atras do nome — o brilho de letreiro, que e o
+     enfeite mais gasto de tela de jogo, e que ainda por cima lava a borda da
+     letra e deixa o nome inteiro meio mole. O neon desta tela nao vem daqui:
+     vem do ciano da grade, do ambar da regua e das cores da comunidade. Numa
+     chapa de titulo o nome e GRAVADO, e gravado quer dizer borda limpa. */
+  color: #fff;
+}
+
+/* A nota de escala: a grade mede 50 por 51. E informacao de verdade — o
+   visitante ve de quantos pixels o quadro e feito — e e o que amarra o
+   cabecalho a regua, porque sai na MESMA tinta com que os rotulos da grade
+   sao impressos. O fio a esquerda e a division de uma chapa de titulo. */
+#registro {
+  padding-left: 20px;
+  border-left: 1px solid var(--regua-fraca);
+  font-family: var(--mono);
+  font-size: 19px;
+  color: var(--regua);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+#registro small {
+  color: var(--texto-fraco);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#subtitulo {
+  margin-top: 8px;
+  font-size: 19px;
+  color: var(--texto-fraco);
+  letter-spacing: 0.5px;
+}
+
+/* A placa de estado.
+   Era uma pilula de 999px com uma bolinha redonda acesa — o enfeite padrao de
+   "ao vivo", que nao diz nada sobre ESTE produto. Virou uma placa de quina
+   viva com o sinal QUADRADO: e a mesma linguagem da regua, e um quadrado
+   aceso le como indicador de painel, que e o que ele e. */
+#conexao {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  border: 1px solid var(--borda);
+  border-left: 3px solid #3aff9e;
+  border-radius: var(--raio);
+  background: var(--painel);
+}
+
+#conexao.fora { border-left-color: var(--amarelo); }
+
+#conexao .luz {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  background: #3aff9e;
+  box-shadow: 0 0 14px #3aff9e;
+  animation: pulsar 2.4s ease-in-out infinite;
+}
+
+#conexao.fora .luz {
+  background: var(--amarelo);
+  box-shadow: 0 0 14px var(--amarelo);
+}
+
+#conexao strong { display: block; font-size: 17px; letter-spacing: 2px; }
+#conexao small { color: var(--texto-fraco); font-size: 13px; }
+
+@keyframes pulsar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Quem pediu menos movimento no sistema, recebe menos movimento.
+   Nada aqui PIORA sem animacao: a luz continua acesa, so para de piscar; o
+   aviso continua entrando, so nao desliza. O que NAO se desliga e a animacao
+   do canvas — ela nao e enfeite, e o retorno que a pessoa recebe ao pintar.
+   Um pixel que aparece sem faisca nenhuma parece que nao funcionou. */
+@media (prefers-reduced-motion: reduce) {
+  #conexao .luz,
+  #evento.aceso {
+    animation: none;
+  }
+
+  .aviso,
+  .feed.novo {
+    animation-duration: 0.01ms;
+  }
+
+  #progresso-barra {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Arena                                                               */
+/* ------------------------------------------------------------------ */
+
+#arena {
+  position: relative;
+  overflow: hidden;
+}
+
+#tela, #particulas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* A grade fica embaixo; as particulas flutuam por cima sem capturar clique. */
+#particulas { pointer-events: none; }
+
+/* ------------------------------------------------------------------ */
+/* Avisos (toasts)                                                     */
+/* ------------------------------------------------------------------ */
+
+#avisos {
+  position: absolute;
+  left: 34px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 620px;
+  pointer-events: none;
+}
+
+.aviso {
+  padding: 14px 22px;
+  border-radius: var(--raio);
+  border: 1px solid var(--borda);
+  border-left: 4px solid var(--ciano);
+  background: rgba(10, 16, 30, 0.92);
+  font-size: 19px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: entrar 0.28s ease-out;
+}
+
+.aviso.erro { border-left-color: var(--rosa); }
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Rodape                                                              */
+/* ------------------------------------------------------------------ */
+
+#rodape {
+  display: grid;
+  /* `auto` no banner para ele sumir por completo fora de evento, e `1fr` na
+     fileira do ranking/feed para ela ficar com toda a sobra. Era aqui que o
+     ranking sumia: com o banner ocupando 92px mesmo vazio, sobravam ~46px
+     para a lista e o `overflow: hidden` cortava as cinco linhas. */
+  grid-template-rows: auto auto 1fr auto;
+  gap: 14px;
+  padding: 16px 34px 20px;
+  border-top: 1px solid var(--borda);
+  background: linear-gradient(0deg, rgba(12, 20, 36, 0.92), rgba(5, 6, 10, 0.4));
+}
+
+/* Evento ------------------------------------------------------------- */
+
+#evento {
+  border-radius: var(--raio);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 26px;
+  height: 92px;
+  overflow: hidden;
+  position: relative;
+  transition: border-color 0.25s, background 0.25s;
+}
+
+/* Fora de evento o banner SAI do layout, nao fica transparente: um espaco
+   vazio de 92px no rodape e exatamente o que comia as linhas do ranking. */
+#evento:empty {
+  display: none;
+}
+
+#evento.aceso {
+  border-color: rgba(255, 217, 61, 0.5);
+  background:
+    linear-gradient(90deg, rgba(255, 217, 61, 0.16), rgba(255, 63, 142, 0.12));
+  box-shadow: 0 0 40px rgba(255, 217, 61, 0.18) inset;
+  animation: eventoPulsa 1.6s ease-in-out infinite;
+}
+
+@keyframes eventoPulsa {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 217, 61, 0.14) inset; }
+  50% { box-shadow: 0 0 60px rgba(255, 217, 61, 0.34) inset; }
+}
+
+.evento-emoji { font-size: 40px; }
+.evento-nome { font-size: 34px; font-weight: 800; letter-spacing: 3px; }
+.evento-bonus {
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amarelo);
+  letter-spacing: 2px;
+}
+
+#evento-tempo {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  min-width: 84px;
+  text-align: right;
+}
+
+#evento-barra {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--amarelo), var(--rosa));
+  transition: width 0.24s linear;
+}
+
+/* Progresso ---------------------------------------------------------- */
+
+#progresso {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  padding: 0 26px;
+  border-radius: var(--raio);
+  border: 1px solid var(--borda);
+  background: var(--painel);
+}
+
+.progresso-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: var(--texto-fraco);
+}
+
+#progresso-texto {
+  font-family: var(--mono);
+  font-size: 26px;
+  color: var(--ciano);
+}
+
+/* A TRILHA E UMA ESCALA GRADUADA.
+   Uma barra de progresso lisa informa "quanto falta" e mais nada. Com as
+   marcas de 10 em 10 ela passa a ser uma escala: da para LER o numero na
+   barra, do mesmo jeito que se le a regua em volta da grade. E o mesmo
+   desenho, na mesma tinta, resolvendo o mesmo problema — medir de relance.
+   As marcas sao um gradiente, nao dez elementos: nao ha o que reflowar. */
+.progresso-trilha {
+  position: relative;
+  height: 16px;
+  border-radius: var(--raio-interno);
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.progresso-trilha::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--regua-fraca) 0 1px,
+    transparent 1px 10%
+  );
+}
+
+#progresso-barra {
+  height: 100%;
+  width: 0;
+  border-radius: var(--raio-interno);
+  background: linear-gradient(90deg, var(--ciano), #5b8cff 55%, var(--rosa));
+  box-shadow: 0 0 18px rgba(56, 245, 255, 0.6);
+  transition: width 0.4s ease-out;
+}
+
+.progresso-numeros {
+  display: flex;
+  gap: 34px;
+  font-size: 18px;
+  color: var(--texto-fraco);
+}
+
+.progresso-numeros b {
+  color: var(--texto);
+  font-family: var(--mono);
+  font-size: 21px;
+}
+
+/* Ranking e feed ----------------------------------------------------- */
+
+#colunas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-height: 0;
+}
+
+#ranking, #feed {
+  border-radius: var(--raio);
+  border: 1px solid var(--borda);
+  background: var(--painel);
+  padding: 12px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* O titulo da lista, com um traco curto embaixo.
+   O `border-bottom` de antes atravessava a placa inteira: era um fio de
+   separacao, que e o que qualquer lista faz. Um traco CURTO na tinta da
+   regua e um marca-pagina — diz onde o titulo comeca e acaba, e nao finge
+   separar duas coisas que ja estao separadas pelo espaco. */
+#ranking h2, #feed h2 {
+  position: relative;
+  font-size: 17px;
+  letter-spacing: 2.5px;
+  color: var(--texto);
+  font-weight: 700;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  flex: none;
+}
+
+#ranking h2::after, #feed h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 34px;
+  height: 2px;
+  background: var(--regua);
+}
+
+#ranking-lista, #feed-lista {
+  list-style: none;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.vazio {
+  color: var(--texto-fraco);
+  font-size: 17px;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Ranking */
+
+.rank {
+  display: grid;
+  grid-template-columns: 32px 18px 1fr 46px 60px;
+  align-items: center;
+  gap: 12px;
+  height: 34px;
+  font-size: 20px;
+}
+
+.rank-pos {
+  font-family: var(--mono);
+  color: var(--texto-fraco);
+  font-weight: 700;
+  text-align: center;
+}
+
+.rank:nth-child(1) .rank-pos { color: var(--amarelo); }
+.rank:nth-child(2) .rank-pos { color: #cfd8ea; }
+.rank:nth-child(3) .rank-pos { color: #e0965a; }
+
+.rank-cor {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--raio-interno);
+  background: var(--cor, #8ea2c8);
+  box-shadow: 0 0 12px var(--cor, #8ea2c8);
+}
+
+.rank-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.rank-nivel {
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  padding: 3px 0;
+  border-radius: var(--raio-interno);
+  color: var(--faixa, #8ea2c8);
+  border: 1px solid currentColor;
+}
+
+.rank-pixels {
+  font-family: var(--mono);
+  text-align: right;
+  color: var(--ciano);
+  font-weight: 700;
+}
+
+/* Feed */
+
+.feed {
+  display: grid;
+  grid-template-columns: 18px 84px 1fr;
+  align-items: center;
+  gap: 12px;
+  height: 34px;
+  font-size: 20px;
+}
+
+.feed.novo { animation: entrarFeed 0.35s ease-out; }
+
+@keyframes entrarFeed {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: none; }
+}
+
+.feed-cor {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--raio-interno);
+  background: var(--cor, #8ea2c8);
+  box-shadow: 0 0 12px var(--cor, #8ea2c8);
+}
+
+/* A mesma tinta da regua, de proposito.
+   O "H5" que aparece aqui e o MESMO endereco que esta impresso na margem do
+   quadro, quarenta pixels acima. Pintados de cores diferentes, os dois
+   parecem duas coisas; pintados igual, o olho entende na hora que a linha do
+   feed aponta para um lugar da tela — e vai la conferir. */
+.feed-coord {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--regua);
+  letter-spacing: 1px;
+}
+
+.feed-user {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--texto);
+}
+
+/* Instrucoes --------------------------------------------------------- */
+
+#instrucoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  border-radius: var(--raio);
+  border: 1px dashed rgba(90, 150, 220, 0.28);
+  font-size: 22px;
+  color: var(--texto-fraco);
+}
+
+#instrucoes b {
+  color: var(--texto);
+  font-family: var(--mono);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 3px 10px;
+  border-radius: var(--raio-interno);
+}
+
+#instrucoes .seta { color: var(--ciano); }

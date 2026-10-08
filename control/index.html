@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PIXEL WORLD — controle</title>
+<link rel="stylesheet" href="/control/control.css">
+</head>
+<body>
+
+<!--
+  Esta pagina NAO vai ao ar. Ela e a bancada de ensaio do streamer: simular
+  um comentario, dar pixels a mao, apagar a zoeira de alguem e medir carga.
+  Por isso aqui a fonte e grande, o contraste e alto e nada anima — quem usa
+  isto esta trabalhando, com a LIVE rodando do lado.
+-->
+
+<header id="barra">
+  <h1>PIXEL WORLD <span>controle</span></h1>
+
+  <div class="medidores">
+    <div class="medidor" id="m-modo"><b>—</b><small>modo</small></div>
+    <div class="medidor" id="m-fonte"><b>—</b><small>fonte</small></div>
+    <div class="medidor" id="m-fila"><b>0</b><small>na fila</small></div>
+    <div class="medidor" id="m-canvas"><b>0%</b><small>pintado</small></div>
+    <div class="medidor" id="m-users"><b>0</b><small>pintores</small></div>
+  </div>
+
+  <div id="vivo"><span class="luz"></span><span id="vivo-texto">lendo…</span></div>
+</header>
+
+<div id="erro" hidden></div>
+
+<main id="grade">
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="cartao" id="cartao-simular">
+    <h2>Simular evento</h2>
+    <p class="dica">
+      Entra na <b>mesma fila</b> que a LIVE usa. O que acontece aqui é o jogo
+      de verdade — só o carteiro é falso.
+    </p>
+
+    <div class="campo">
+      <label for="sim-tipo">Tipo</label>
+      <select id="sim-tipo">
+        <option value="comentario">💬 comentário</option>
+        <option value="presente">🌹 presente</option>
+        <option value="curtida">❤️ curtida</option>
+        <option value="seguir">➕ seguir</option>
+        <option value="compartilhar">🔁 compartilhar</option>
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="sim-usuario">Usuário</label>
+      <input id="sim-usuario" list="usuarios-conhecidos" placeholder="quem mandou" autocomplete="off">
+      <datalist id="usuarios-conhecidos"></datalist>
+    </div>
+
+    <div class="campo" id="campo-texto">
+      <label for="sim-texto">Texto</label>
+      <input id="sim-texto" placeholder="H5  ·  /cor vermelho  ·  girafa" autocomplete="off">
+      <div class="atalhos" id="atalhos-coord"></div>
+    </div>
+
+    <div class="campo" id="campo-presente" hidden>
+      <label for="campo-gift">Presente</label>
+      <div class="linha">
+        <select id="campo-gift">
+          <option value="Rose">🌹 Rose</option>
+          <option value="TikTok">🎵 TikTok</option>
+          <option value="Finger Heart">🫰 Finger Heart</option>
+          <option value="Ice Cream">🍦 Ice Cream</option>
+          <option value="Galaxy">🌌 Galaxy</option>
+        </select>
+        <input id="sim-quantidade" type="number" min="1" max="9999" value="1" title="quantidade">
+      </div>
+    </div>
+
+    <button class="acao" id="btn-simular">Enfileirar</button>
+
+    <div class="rajada">
+      <label for="burst">Rajada</label>
+      <div class="linha">
+        <input id="burst" type="number" min="0" max="5000" value="200">
+        <button class="acao secundaria" id="btn-burst">Disparar</button>
+      </div>
+      <small>2000 eventos de uma vez mede o teto do quadro. O canvas tem que continuar andando.</small>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="cartao" id="cartao-inventario">
+    <h2>Pixels de alguém</h2>
+    <p class="dica">
+      <b>Crava</b> o saldo, não soma. Clicar duas vezes em 50 deixa 50 — é o
+      que permite repetir um teste sem reiniciar o servidor.
+    </p>
+
+    <div class="campo">
+      <label for="inv-usuario">Usuário</label>
+      <input id="inv-usuario" list="usuarios-conhecidos" placeholder="@fulano" autocomplete="off">
+    </div>
+
+    <div class="campo">
+      <label for="inv-pixels">Saldo</label>
+      <div class="linha">
+        <input id="inv-pixels" type="number" min="0" value="50">
+        <button class="acao" id="btn-inventario">Cravar</button>
+      </div>
+    </div>
+
+    <div class="linha atalhos-negrito">
+      <button class="mini" data-valor="0">0</button>
+      <button class="mini" data-valor="5">5</button>
+      <button class="mini" data-valor="50">50</button>
+      <button class="mini" data-valor="500">500</button>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="cartao" id="cartao-eventos">
+    <h2>Eventos da LIVE</h2>
+    <p class="dica">
+      Força um evento agora. O telão troca o banner e todo mundo que pintar
+      durante ele ganha o multiplicador.
+    </p>
+    <div id="botoes-evento" class="linha"></div>
+    <div id="evento-ativo" class="vazio">nenhum evento no ar</div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="cartao" id="cartao-pixel">
+    <h2>Inspecionar pixel</h2>
+    <p class="dica">
+      Quem pintou, quando, e tudo que já passou por ali. Apagar devolve a
+      célula ao estado virgem — <b>o histórico permanece</b>.
+    </p>
+    <div class="linha">
+      <input id="px-coord" placeholder="H5" autocomplete="off">
+      <button class="acao secundaria" id="btn-inspecionar">Ver</button>
+      <button class="acao perigo" id="btn-apagar">Apagar</button>
+    </div>
+    <div id="pixel-detalhe" class="vazio">nenhum pixel escolhido</div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="cartao" id="cartao-limpar">
+    <h2>Limpar o quadro</h2>
+    <p class="dica">
+      Apaga <b>todos</b> os pixels do quadro e mata as animações que estão na
+      tela agora. Pede confirmação, porque <b>não tem volta</b>. O ranking e o
+      histórico ficam: quem pintou, pintou.
+    </p>
+    <button class="acao perigo" id="btn-limpar">Limpar tudo</button>
+    <div id="limpar-status" class="vazio">nada foi limpo ainda</div>
+  </section>
+
+  <!-- ---------------------------------------------------------------- -->
+  <section class="cartao" id="cartao-ranking">
+    <h2>🏆 Top pintores</h2>
+    <ol id="ranking-lista"></ol>
+  </section>
+
+  <section class="cartao" id="cartao-feed">
+    <h2>🖌️ Últimas pinturas</h2>
+    <ul id="feed-lista"></ul>
+  </section>
+
+</main>
+
+<script type="module" src="/control/control.js"></script>
+</body>
+</html>

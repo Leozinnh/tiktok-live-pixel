@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PIXEL WORLD</title>
+<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+
+<!--
+  O palco tem 1920px de altura fixa e a LARGURA que a janela pedir, e `#palco`
+  e escalado por inteiro para preencher a janela (ver style.css e o `--escala`).
+  A composicao vertical — cabecalho, arena, rodape — sai igual em qualquer
+  janela; o que muda e quanta arena cabe na largura. Nao ha layout alternativo
+  escondido atras de um breakpoint, e essa e a garantia que interessa: o que o
+  streamer viu no ensaio e exatamente o que sai no ar.
+-->
+<div id="palco">
+
+  <header id="topo">
+    <div id="marca">
+      <div id="marca-linha">
+        <h1>PIXEL WORLD</h1>
+        <!-- A escala da chapa, como numa carta: quanto mede o quadro.
+             O numero e preenchido pelo `hud.js` com o tamanho que o SERVIDOR
+             mandou, e nao com o que esta escrito aqui — se a grade crescer um
+             dia, este texto acompanha sozinho. -->
+        <span id="registro"><small>grade</small> <b id="grade-medida">—</b></span>
+      </div>
+      <p id="subtitulo">a comunidade pinta um quadro por vez</p>
+    </div>
+
+    <div id="conexao">
+      <span class="luz"></span>
+      <div>
+        <strong id="conexao-texto">CONECTANDO</strong>
+        <small id="conexao-detalhe">abrindo o canal</small>
+      </div>
+    </div>
+  </header>
+
+  <main id="arena">
+    <canvas id="tela"></canvas>
+    <canvas id="particulas"></canvas>
+    <div id="avisos"></div>
+  </main>
+
+  <footer id="rodape">
+
+    <section id="evento"></section>
+
+    <section id="progresso">
+      <div class="progresso-topo">
+        <span class="rotulo">CANVAS PREENCHIDO</span>
+        <span id="progresso-texto">0%</span>
+      </div>
+      <div class="progresso-trilha"><div id="progresso-barra"></div></div>
+      <div class="progresso-numeros">
+        <span><b id="stat-pixels">0/0</b> pixels</span>
+        <span><b id="stat-users">0</b> pintores</span>
+        <span><b id="stat-colors">0</b> cores</span>
+      </div>
+    </section>
+
+    <div id="colunas">
+      <section id="ranking">
+        <h2>🏆 TOP PINTORES</h2>
+        <ol id="ranking-lista"></ol>
+      </section>
+
+      <section id="feed">
+        <h2>🖌️ ÚLTIMAS PINTURAS</h2>
+        <ul id="feed-lista"></ul>
+      </section>
+    </div>
+
+    <section id="instrucoes">
+      <span class="passo"><b>🌹</b> mande uma rosa</span>
+      <span class="seta">→</span>
+      <span class="passo"><b>H5</b> comente a coordenada</span>
+      <span class="seta">→</span>
+      <span class="passo"><b>🎨</b> seu pixel entra no quadro</span>
+    </section>
+
+  </footer>
+
+</div>
+
+<script type="module" src="/ui/js/app.js"></script>
+</body>
+</html>

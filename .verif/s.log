@@ -1,0 +1,149 @@
+
+  ██  PIXEL WORLD
+  MODO TESTE — nada disto esta no ar
+
+  Tela (OBS, 1080x1920)   http://localhost:8099/
+  Painel de controle      http://localhost:8099/control
+  Canvas                  50 x 51 = 2550 pixels
+
+  No painel: simule uma rosa e comente a coordenada (ex: H5).
+
+2026-10-08 16:11:56,152 INFO    uvicorn.error: Started server process [1392]
+2026-10-08 16:11:56,153 INFO    uvicorn.error: Waiting for application startup.
+2026-10-08 16:11:56,174 INFO    backend.database: Banco aberto em C:\Users\leona\Downloads\tiktok_live_pixel\.verif\v.db
+2026-10-08 16:11:56,179 INFO    backend.estado: PIXEL WORLD no ar — 50x51, 0 celulas pintadas, fonte: MODO TESTE — sem LIVE
+2026-10-08 16:11:56,180 INFO    uvicorn.error: Application startup complete.
+2026-10-08 16:11:56,181 INFO    uvicorn.error: Uvicorn running on http://127.0.0.1:8099 (Press CTRL+C to quit)
+2026-10-08 16:13:11,119 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 16:13:31,151 INFO    game.events: Evento encerrado: caos
+2026-10-08 16:14:39,629 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:14:49,171 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:14:49,171 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:14:51,542 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:14:51,542 INFO    game.events: Evento no ar: ⚡ PIXEL TURBO
+2026-10-08 16:14:53,938 INFO    game.events: Evento encerrado: pixel_turbo
+2026-10-08 16:14:53,939 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:14:56,395 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:14:56,395 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 16:14:58,786 INFO    game.events: Evento encerrado: caos
+2026-10-08 16:14:58,786 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:15:16,198 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:15:16,198 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:15:28,246 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:15:28,247 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 16:15:40,980 INFO    game.events: Evento encerrado: caos
+2026-10-08 16:15:40,980 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:15:54,325 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:15:54,325 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:16:07,661 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:16:07,661 INFO    game.events: Evento no ar: ⚡ PIXEL TURBO
+2026-10-08 16:16:37,592 INFO    game.events: Evento encerrado: pixel_turbo
+2026-10-08 16:16:37,592 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:17:10,703 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:17:10,704 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:17:43,860 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:17:43,860 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 16:18:03,879 INFO    game.events: Evento encerrado: caos
+2026-10-08 16:18:16,990 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:18:47,029 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:18:50,155 INFO    game.events: Evento no ar: ⚡ PIXEL TURBO
+2026-10-08 16:19:20,212 INFO    game.events: Evento encerrado: pixel_turbo
+2026-10-08 16:19:33,087 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:20:06,218 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:20:06,219 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:20:39,322 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:20:39,322 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 16:20:59,351 INFO    game.events: Evento encerrado: caos
+2026-10-08 16:21:12,426 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:21:42,477 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:21:45,517 INFO    game.events: Evento no ar: ⚡ PIXEL TURBO
+2026-10-08 16:22:15,558 INFO    game.events: Evento encerrado: pixel_turbo
+2026-10-08 16:24:12,913 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:24:14,301 INFO    uvicorn.error: 127.0.0.1:62679 - "WebSocket /ws" [accepted]
+2026-10-08 16:24:14,302 INFO    uvicorn.error: connection open
+2026-10-08 16:24:16,165 INFO    uvicorn.error: 127.0.0.1:62154 - "WebSocket /ws" [accepted]
+2026-10-08 16:24:16,166 INFO    uvicorn.error: connection open
+2026-10-08 16:24:17,933 INFO    uvicorn.error: 127.0.0.1:64832 - "WebSocket /ws" [accepted]
+2026-10-08 16:24:17,933 INFO    uvicorn.error: connection open
+2026-10-08 16:24:27,338 INFO    uvicorn.error: 127.0.0.1:51841 - "WebSocket /ws" [accepted]
+2026-10-08 16:24:27,338 INFO    uvicorn.error: connection open
+2026-10-08 16:24:34,314 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:24:34,314 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:24:35,361 INFO    uvicorn.error: 127.0.0.1:52856 - "WebSocket /ws" [accepted]
+2026-10-08 16:24:35,361 INFO    uvicorn.error: connection open
+2026-10-08 16:24:35,924 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:24:35,924 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:24:37,050 INFO    uvicorn.error: 127.0.0.1:49262 - "WebSocket /ws" [accepted]
+2026-10-08 16:24:37,050 INFO    uvicorn.error: connection open
+2026-10-08 16:25:20,950 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:28:17,254 INFO    uvicorn.error: 127.0.0.1:56971 - "WebSocket /ws" [accepted]
+2026-10-08 16:28:17,255 INFO    uvicorn.error: connection open
+2026-10-08 16:28:20,978 INFO    game.events: Evento no ar: ⚡ PIXEL TURBO
+2026-10-08 16:28:28,571 INFO    uvicorn.error: 127.0.0.1:62370 - "WebSocket /ws" [accepted]
+2026-10-08 16:28:28,571 INFO    uvicorn.error: connection open
+2026-10-08 16:28:36,155 INFO    game.events: Evento encerrado: pixel_turbo
+2026-10-08 16:28:36,155 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:28:37,207 INFO    uvicorn.error: 127.0.0.1:65094 - "WebSocket /ws" [accepted]
+2026-10-08 16:28:37,207 INFO    uvicorn.error: connection open
+2026-10-08 16:28:54,477 INFO    uvicorn.error: 127.0.0.1:53411 - "WebSocket /ws" [accepted]
+2026-10-08 16:28:54,477 INFO    uvicorn.error: connection open
+2026-10-08 16:29:36,166 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:31:41,095 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:31:42,751 INFO    uvicorn.error: 127.0.0.1:57796 - "WebSocket /ws" [accepted]
+2026-10-08 16:31:42,751 INFO    uvicorn.error: connection open
+2026-10-08 16:32:26,104 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:35:26,117 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:35:56,158 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:37:35,035 INFO    uvicorn.error: 127.0.0.1:54729 - "WebSocket /ws" [accepted]
+2026-10-08 16:37:35,035 INFO    uvicorn.error: connection open
+2026-10-08 16:38:56,187 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:39:26,226 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:39:26,951 INFO    uvicorn.error: 127.0.0.1:51324 - "WebSocket /ws" [accepted]
+2026-10-08 16:39:26,951 INFO    uvicorn.error: connection open
+2026-10-08 16:39:44,146 INFO    uvicorn.error: 127.0.0.1:54793 - "WebSocket /ws" [accepted]
+2026-10-08 16:39:44,146 INFO    uvicorn.error: connection open
+2026-10-08 16:39:44,866 ERROR   asyncio: Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Python314\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+2026-10-08 16:39:46,217 INFO    uvicorn.error: 127.0.0.1:61062 - "WebSocket /ws" [accepted]
+2026-10-08 16:39:46,217 INFO    uvicorn.error: connection open
+2026-10-08 16:40:53,075 INFO    uvicorn.error: 127.0.0.1:64048 - "WebSocket /ws" [accepted]
+2026-10-08 16:40:53,076 INFO    uvicorn.error: connection open
+2026-10-08 16:42:26,237 INFO    game.events: Evento no ar: 🎯 DESAFIO
+2026-10-08 16:43:11,259 INFO    game.events: Evento encerrado: desafio
+2026-10-08 16:44:53,170 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:44:59,879 INFO    uvicorn.error: 127.0.0.1:59360 - "WebSocket /ws" [accepted]
+2026-10-08 16:44:59,880 INFO    uvicorn.error: connection open
+2026-10-08 16:45:53,201 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 16:48:53,224 INFO    game.events: Evento no ar: 🎨 HORA DO PIXEL
+2026-10-08 16:49:23,262 INFO    game.events: Evento encerrado: hora_do_pixel
+2026-10-08 16:49:27,250 INFO    uvicorn.error: 127.0.0.1:50638 - "WebSocket /ws" [accepted]
+2026-10-08 16:49:27,251 INFO    uvicorn.error: connection open
+2026-10-08 16:52:07,445 INFO    uvicorn.error: 127.0.0.1:56869 - "WebSocket /ws" [accepted]
+2026-10-08 16:52:07,446 INFO    uvicorn.error: connection open
+2026-10-08 16:52:23,285 INFO    game.events: Evento no ar: 💥 CAOS
+2026-10-08 16:52:43,347 INFO    game.events: Evento encerrado: caos
+2026-10-08 16:52:50,372 INFO    uvicorn.error: 127.0.0.1:57877 - "WebSocket /ws" [accepted]
+2026-10-08 16:52:50,372 INFO    uvicorn.error: connection open
+2026-10-08 16:53:44,898 INFO    uvicorn.error: 127.0.0.1:51785 - "WebSocket /ws" [accepted]
+2026-10-08 16:53:44,898 INFO    uvicorn.error: connection open
+2026-10-08 16:55:32,385 INFO    uvicorn.error: 127.0.0.1:53295 - "WebSocket /ws" [accepted]
+2026-10-08 16:55:32,385 INFO    uvicorn.error: connection open
+2026-10-08 16:55:43,391 INFO    game.events: Evento no ar: ⚡ PIXEL TURBO
+2026-10-08 16:56:04,276 INFO    game.events: Evento encerrado: pixel_turbo
+2026-10-08 16:56:04,277 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 16:56:05,567 INFO    uvicorn.error: 127.0.0.1:58279 - "WebSocket /ws" [accepted]
+2026-10-08 16:56:05,567 INFO    uvicorn.error: connection open
+2026-10-08 16:57:04,281 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 17:00:04,299 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 17:01:04,351 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 17:04:04,394 INFO    game.events: Evento no ar: 🌈 ARCO-ÍRIS
+2026-10-08 17:05:04,404 INFO    game.events: Evento encerrado: arco_iris
+2026-10-08 17:08:04,433 INFO    game.events: Evento no ar: 💥 CAOS

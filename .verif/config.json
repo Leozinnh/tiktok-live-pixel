@@ -1,0 +1,170 @@
+{
+  "app": {
+    "titulo": "PIXEL WORLD",
+    "subtitulo": "VOCÊ CONTROLA A ARTE",
+    "log_dir": "logs",
+    "db_path": ".verif/v.db",
+    "feed_size": 6,
+    "events_per_frame": 400
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000,
+    "frame_ms": 50
+  },
+  "canvas": {
+    "cols": 50,
+    "rows": 51,
+    "paleta": {
+      "vermelho": "#FF3B5C",
+      "laranja": "#FF8A3D",
+      "amarelo": "#FFD93D",
+      "verde": "#3DFF8A",
+      "azul": "#3D9BFF",
+      "roxo": "#A855F7",
+      "rosa": "#FF6FD8",
+      "branco": "#EEF2FF"
+    },
+    "especiais": {
+      "arco_iris": {
+        "rotulo": "ARCO-ÍRIS",
+        "emoji": "🌈",
+        "efeito": "arco_iris",
+        "desbloqueio": 500
+      },
+      "fogo": {
+        "rotulo": "FOGO",
+        "emoji": "🔥",
+        "efeito": "fogo",
+        "desbloqueio": 250
+      },
+      "eletrico": {
+        "rotulo": "ELÉTRICO",
+        "emoji": "⚡",
+        "efeito": "eletrico",
+        "desbloqueio": 250
+      },
+      "galaxia": {
+        "rotulo": "GALÁXIA",
+        "emoji": "🌌",
+        "efeito": "galaxia",
+        "desbloqueio": 750
+      },
+      "neon": {
+        "rotulo": "NEON",
+        "emoji": "✨",
+        "efeito": "neon",
+        "desbloqueio": 500
+      },
+      "diamante": {
+        "rotulo": "DIAMANTE",
+        "emoji": "💎",
+        "efeito": "diamante",
+        "desbloqueio": 1000
+      }
+    }
+  },
+  "tiktok": {
+    "username": "@SEU_USUARIO",
+    "reconnect_seconds": 5,
+    "reconnect_max_seconds": 60,
+    "fetch_gift_info": true,
+    "cooldown_pintura": 2.0
+  },
+  "rewards": {
+    "pixel_custo": 1,
+    "sobrescrita_custo": 2,
+    "presente_desconhecido": 1,
+    "gifts": {
+      "Rose": 1,
+      "TikTok": 1,
+      "GG": 1,
+      "Heart Me": 1,
+      "Ice Cream Cone": 1,
+      "Finger Heart": 2,
+      "Perfume": 5,
+      "Doughnut": 5,
+      "Hand Hearts": 12,
+      "Cap": 12,
+      "Confetti": 12,
+      "Corgi": 25,
+      "Galaxy": 60,
+      "Lion": 300
+    },
+    "like": {
+      "curtidas_por_pixel": 20,
+      "max_pixels": 10
+    },
+    "follow": {
+      "pixels": 5
+    },
+    "share": {
+      "pixels": 3
+    }
+  },
+  "xp": {
+    "por_pixel": 10,
+    "por_sobrescrita": 15,
+    "base_por_nivel": 100,
+    "passo_por_nivel": 25
+  },
+  "events": {
+    "active": true,
+    "interval": 180,
+    "first_after": 75,
+    "catalog": [
+      {
+        "key": "hora_do_pixel",
+        "name": "HORA DO PIXEL",
+        "emoji": "🎨",
+        "duration": 30,
+        "multiplier": 2.0,
+        "weight": 3.0,
+        "effect": null
+      },
+      {
+        "key": "arco_iris",
+        "name": "ARCO-ÍRIS",
+        "emoji": "🌈",
+        "duration": 60,
+        "multiplier": 1.0,
+        "weight": 2.0,
+        "effect": "arco_iris"
+      },
+      {
+        "key": "pixel_turbo",
+        "name": "PIXEL TURBO",
+        "emoji": "⚡",
+        "duration": 30,
+        "multiplier": 3.0,
+        "weight": 3.0,
+        "effect": null
+      },
+      {
+        "key": "caos",
+        "name": "CAOS",
+        "emoji": "💥",
+        "duration": 20,
+        "multiplier": 1.5,
+        "weight": 1.0,
+        "effect": "caos"
+      },
+      {
+        "key": "desafio",
+        "name": "DESAFIO",
+        "emoji": "🎯",
+        "duration": 45,
+        "multiplier": 1.0,
+        "weight": 1.0,
+        "effect": "desafio"
+      }
+    ]
+  },
+  "limits": {
+    "queue_max_size": 5000,
+    "max_pixels_por_evento": 400,
+    "action_budget": {
+      "pintar": 40.0
+    }
+  }
+}
