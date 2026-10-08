@@ -279,12 +279,12 @@ export class Renderer {
     ctx.lineWidth = fino;
     ctx.stroke();
 
-    // Os efeitos de CELULA (ARCO-IRIS, BRILHO) nao desenham nada POR CIMA:
-    // trocam a cor das celulas JA pintadas. A faixa antiga do arco-iris
-    // atravessava o quadro tapando o desenho — a audiencia via um retangulo
-    // colorido de passagem, e nao o pixel que tinha acabado de pagar. Quem
-    // decide a cor de cada celula e `corDaCelula`; com um enfeite no ar (ou
-    // sem evento nenhum) ela devolve a cor da pessoa intacta.
+    // Quem decide a cor de cada celula e `corDaCelula`: o ARCO-IRIS gira a cor
+    // das celulas JA pintadas, e o feixe do BRILHO as acende. Nenhum dos dois
+    // passa uma faixa POR CIMA do quadro — a faixa antiga do arco-iris tapava
+    // o desenho, e a audiencia via um retangulo colorido de passagem em vez do
+    // pixel que tinha acabado de pagar. Sem efeito de celula (com um enfeite
+    // no ar, ou sem evento nenhum) a cor da pessoa volta intacta.
     //
     // As celulas pintadas usam as MESMAS fronteiras da linha. Se cada uma
     // calculasse o proprio tamanho a partir de `celula`, as duas contas
@@ -334,7 +334,9 @@ export class Renderer {
 
     // O enfeite do evento, por ultimo e por cima de tudo. Ele e desenhado no
     // espaco de CSS — o mesmo da grade — e nao no do aparelho: quem cuida do
-    // encaixe nas bordas e o `bordasDaGrade`, e o enfeite nao tem borda.
+    // encaixe nas bordas e o `bordasDaGrade`, e o enfeite nao tem borda. O
+    // `cols`/`rows` vao junto porque a chuva da HORA DO PIXEL cai em pixels
+    // do tamanho de uma celula.
     desenharEvento(
       ctx,
       this.efeito,
@@ -343,6 +345,8 @@ export class Renderer {
         y: ys[0],
         w: xs[this.cols] - xs[0],
         h: ys[this.rows] - ys[0],
+        cols: this.cols,
+        rows: this.rows,
       },
       t
     );

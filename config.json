@@ -14,8 +14,8 @@
   },
 
   "canvas": {
-    "cols": 25,
-    "rows": 26,
+    "cols": 26,
+    "rows": 27,
 
     "paleta": {
       "vermelho": "#FF3B5C",
@@ -53,6 +53,16 @@
     "cooldown_pintura": 2.0
   },
 
+  "tts": {
+    "active": true,
+    "voz": "pt-BR-FranciscaNeural",
+    "rate": "+8%",
+    "pitch": "+3Hz",
+    "min_pixels": 0,
+    "falas": [],
+    "boas_vindas": []
+  },
+
   "rewards": {
     "pixel_custo": 1,
     "sobrescrita_custo": 2,
@@ -78,8 +88,8 @@
     },
 
     "like": {
-      "curtidas_por_pixel": 20,
-      "max_pixels": 10
+      "curtidas_por_pixel": 10,
+      "max_pixels": 100
     },
 
     "follow": { "pixels": 5 },

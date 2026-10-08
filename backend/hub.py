@@ -73,6 +73,17 @@ class WebSocketHub:
 
         tipo = msg.get("type")
 
+        if tipo == "toast":
+            # O toast vive na cena do OBS, que fica fora do alcance de quem
+            # esta ao vivo. Espelhar aqui e o que permite depurar "o jogo
+            # avisou?" pelo terminal — e e o unico registro que sobra quando
+            # a tela esta fechada. So o toast: o resto e volume.
+            logger.info(
+                "Toast na tela (%s): %s",
+                msg.get("kind") or "info",
+                msg.get("text") or "",
+            )
+
         with self._lock:
             if tipo in self.tipos_de_estado:
                 # Substitui: so o ultimo estado de cada tipo importa.

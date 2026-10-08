@@ -189,6 +189,16 @@ def test_seguir_e_compartilhar():
     assert segundo.type == EventType.SHARE
 
 
+def test_entrar_enfileira_uma_chegada():
+    sim, fila = novo()
+
+    sim.entrar("joao")
+
+    evento = fila.get_nowait()
+    assert evento.type == EventType.JOIN
+    assert evento.username == "joao"
+
+
 # --------------------------------------------------------------------------
 # Rajada
 # --------------------------------------------------------------------------

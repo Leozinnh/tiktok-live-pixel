@@ -30,6 +30,7 @@ from game.canvas import CanvasModel
 from game.colors import cores_do_config, lista_da_paleta
 from game.events import SchedulerEventos
 from game.inventory import Inventario
+from game.narrador import Narrador
 from game.painting import ServicoPintura
 from game.pipeline import Pipeline
 from game.ranking import Ranking
@@ -108,6 +109,10 @@ class EstadoJogo:
         # a cada evento, entao a regra do bonus mora num lugar so.
         self.scheduler = SchedulerEventos(cfg, publicar=self._publicar_do_hub, seed=seed)
 
+        # A voz dos presentes. A thread fica parada ate a primeira doacao;
+        # quem a liga e o `abrir()`, junto com a fonte de eventos.
+        self.narrador = Narrador(cfg)
+
         self.pipeline = Pipeline(
             cfg,
             servico=self.servico,
@@ -115,6 +120,7 @@ class EstadoJogo:
             db=self.db,
             ranking=self.ranking,
             multiplicador_fn=self.multiplicador,
+            narrador=self.narrador,
         )
 
         self.intervalo_quadro = max(0.005, float((cfg.get("server") or {}).get("frame_ms") or 50) / 1000.0)
@@ -165,6 +171,7 @@ class EstadoJogo:
         self.ranking.carregar(await self.db.top_pintores(500))
 
         self.fonte.start()
+        self.narrador.ligar()
         await self.hub.iniciar()
 
         self._tarefa = asyncio.create_task(self._laco(), name="jogo")
@@ -193,6 +200,7 @@ class EstadoJogo:
                 logger.debug("O laco do jogo terminou com erro", exc_info=True)
 
         self.fonte.stop()
+        self.narrador.parar()
         await self.hub.parar()
         await self.db.fechar()
 

@@ -96,7 +96,7 @@ PADROES: dict[str, Any] = {
         # teto vale em silencio — foi o que aconteceu ate agora.
         "max_multiplicador": 100,
         "gifts": {"Rose": 1},
-        "like": {"curtidas_por_pixel": 20, "max_pixels": 10},
+        "like": {"curtidas_por_pixel": 50, "max_pixels": 10},
         "follow": {"pixels": 5},
         "share": {"pixels": 3},
     },

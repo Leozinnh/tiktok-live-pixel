@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # Os botoes do painel, como o streamer os le. Sao rotulos de operacao, nao
 # os valores de `EventType` — a traducao entre os dois e o que este modulo faz.
 TIPOS_DE_SIMULACAO = frozenset(
-    {"comentario", "presente", "curtida", "seguir", "compartilhar"}
+    {"comentario", "presente", "curtida", "seguir", "compartilhar", "entrar"}
 )
 
 TETO_DA_RAJADA = 5000
@@ -174,6 +174,8 @@ def montar_controle(app: FastAPI, estado) -> None:
             fonte.curtir(usuario, pedido.quantidade)
         elif pedido.tipo == "seguir":
             fonte.seguir(usuario)
+        elif pedido.tipo == "entrar":
+            fonte.entrar(usuario)
         else:
             fonte.compartilhar(usuario)
 

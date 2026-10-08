@@ -85,7 +85,7 @@ várias linhas, dá no mesmo: o parser separa por vírgula, ponto-e-vírgula,
 espaço e `\n`.
 
 Quem manda a lista sem saldo para tudo recebe o aviso **com o nome**: `SEM
-PIXELS — @fulano, MANDE UMA ROSA 🌹 OU CURTA 20x` — a curtida é o caminho
+PIXELS — @fulano, MANDE UMA ROSA 🌹 OU CURTA 50x` — a curtida é o caminho
 grátis, e o aviso diz de quem é a vez.
 
 ### As regras que fazem a coisa funcionar

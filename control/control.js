@@ -177,7 +177,7 @@ function desenharFeed(itens) {
 }
 
 // Como cada tipo de ganho se le no painel. O servidor manda o numero CRU
-// (`amount`, no total de curtidas da pessoa na sala) e o tipo; a frase fica
+// (`amount`, no total de curtidas da sala) e o tipo; a frase fica
 // aqui, que e quem sabe qual emoji e qual verbo usar.
 const GANHOS = {
   gift: { emoji: "🌹", texto: (i) => `mandou ${i.amount}× ${i.gift || "presente"}` },

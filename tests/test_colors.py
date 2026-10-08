@@ -18,6 +18,7 @@ from game.colors import (
     chave_especial,
     cor_automatica,
     parse_cor,
+    separar_cor,
 )
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -217,3 +218,35 @@ def test_cor_e_imutavel():
     assert isinstance(cor, Cor)
     with pytest.raises(Exception):
         cor.hex = "#000000"
+
+
+# --------------------------------------------------------------------------
+# Cor colada na coordenada
+# --------------------------------------------------------------------------
+
+
+def test_separar_cor_devolve_a_cor_e_o_resto():
+    cor, resto = separar_cor("/vermelho W1, X1", PALETA_PADRAO, ESPECIAIS)
+
+    assert cor == Cor(hex=PALETA_PADRAO["vermelho"])
+    assert resto == "W1, X1"
+
+
+def test_separar_cor_de_uma_cor_so_deixa_o_resto_vazio():
+    cor, resto = separar_cor("azul", PALETA_PADRAO, ESPECIAIS)
+
+    assert cor == Cor(hex=PALETA_PADRAO["azul"])
+    assert resto == ""
+
+
+def test_separar_cor_le_o_nome_composto_das_especiais():
+    """So as especiais tem nome de duas palavras: "arco iris W1" e uma jogada."""
+    cor, resto = separar_cor("arco iris W1", PALETA_PADRAO, ESPECIAIS)
+
+    assert cor == Cor(hex="#FF00E5", efeito="arco_iris")
+    assert resto == "W1"
+
+
+@pytest.mark.parametrize("texto", ["oi gente", "W1, X1", "/pontos", "", None])
+def test_separar_cor_sem_cor_no_comeco_devolve_none(texto):
+    assert separar_cor(texto, PALETA_PADRAO, ESPECIAIS) is None

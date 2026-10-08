@@ -5,7 +5,9 @@ Duas origens, uma so forma de guardar:
 - **Automatica**: todo mundo recebe uma cor ao aparecer, derivada do nome. A
   pessoa nao precisa escolher nada para participar — esse e o ponto. Quem
   quiser personaliza com `/cor`.
-- **Escolhida**: `/cor vermelho` ou `/cor #FF0055`.
+- **Escolhida**: `/cor vermelho` ou `/cor #FF0055`. A cor pode vir COLADA na
+  coordenada ("/vermelho W1,X1,..."): quem esta pintando um desenho inteiro
+  de uma cor escreve a cor primeiro, e a mensagem inteira e uma jogada so.
 
 A cor automatica usa CRC32, e NAO `hash()`. O `hash()` de strings em Python e
 aleatorizado por PYTHONHASHSEED a cada processo: o mesmo @joao apareceria
@@ -46,6 +48,9 @@ COR_PADRAO = "#FFFFFF"
 _HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 _COMANDO_COR = re.compile(r"^/?(?:cor|color)\s+", re.IGNORECASE)
 _NAO_ALFANUMERICO = re.compile(r"[^a-z0-9]+")
+
+# Um pedaco do comentario: tudo que nao e separador de lista nem espaco.
+_PEDACO = re.compile(r"[^,\s]+")
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,6 +140,43 @@ def parse_cor(texto, paleta: dict[str, str], especiais: dict[str, dict]) -> Cor 
     especial = chave_especial(limpo, especiais)
     if especial is not None:
         return Cor(hex=cor_do_especial(especial, especiais), efeito=especial)
+
+    return None
+
+
+def separar_cor(
+    texto, paleta: dict[str, str], especiais: dict[str, dict]
+) -> tuple[Cor, str] | None:
+    """Separa a cor que ABRE o comentario do resto — as coordenadas.
+
+    Quem esta pintando um desenho inteiro de uma cor escreve "vermelho W1,X1"
+    numa mensagem so; exigir dois comentarios (um para trocar a cor, outro
+    para pintar) faria a pessoa pintar de errado e concluir que a cor nao
+    pegou. Devolve `(cor, resto)`, com o resto VAZIO quando o comentario era
+    so a cor — e `None` quando o comeco nao e cor nenhuma, que e o caso da
+    conversa, das coordenadas soltas e do `/pontos`.
+
+    As especiais de nome composto ("arco iris") so casam nas DUAS primeiras
+    palavras juntas: tenta-se a primeira sozinha e, se nao der, o par. Nao ha
+    nome de uma palavra so que precise disso, entao a ordem nao ambigua.
+    """
+    if not isinstance(texto, str):
+        return None
+
+    limpo = _COMANDO_COR.sub("", texto.strip()).strip()
+    if not limpo:
+        return None
+
+    pedacos = list(_PEDACO.finditer(limpo))
+
+    for quantos in (1, 2):
+        if len(pedacos) < quantos:
+            continue
+
+        candidato = limpo[pedacos[0].start() : pedacos[quantos - 1].end()]
+        cor = parse_cor(candidato, paleta, especiais)
+        if cor is not None:
+            return cor, limpo[pedacos[quantos - 1].end() :].strip(" ,")
 
     return None
 

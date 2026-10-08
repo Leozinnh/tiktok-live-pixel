@@ -236,6 +236,15 @@ class SimuladorLive:
         self.queue.put(evento)
         return evento
 
+    def entrar(self, username: str) -> LiveEvent:
+        evento = LiveEvent(
+            type=EventType.JOIN,
+            username=_limpar(username),
+            display_name=_rotulo(username),
+        )
+        self.queue.put(evento)
+        return evento
+
     # ------------------------------------------------------------------
     # Rajada
     # ------------------------------------------------------------------

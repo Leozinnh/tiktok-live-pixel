@@ -17,6 +17,7 @@ A regra tem duas metades, e a diferenca entre elas importa:
 """
 
 import asyncio
+import logging
 import time
 
 import pytest
@@ -77,6 +78,29 @@ async def test_mil_publicacoes_viram_um_unico_envio():
     assert cliente.envios == 1
     assert cliente.recebidos[0]["type"] == "pixels"
     assert len(cliente.recebidos[0]["items"]) == 1000
+
+
+# --------------------------------------------------------------------------
+# Console
+# --------------------------------------------------------------------------
+
+
+async def test_o_toast_tambem_sai_no_console(caplog):
+    """Todo toast que vai para a tela deixa uma linha no terminal.
+
+    A cena do OBS fica fora do alcance de quem esta ao vivo: sem este
+    espelho, "o jogo avisou?" so se responde olhando o video. So o toast
+    vale a linha — pixel pintado e volume e afogaria o console.
+    """
+    hub = WebSocketHub()
+
+    with caplog.at_level(logging.INFO, logger="backend.hub"):
+        hub.publicar({"type": "toast", "kind": "error", "text": "SEM PIXELS - joao"})
+        hub.publicar(pixel())
+
+    linhas = [r.getMessage() for r in caplog.records]
+    assert sum("Toast na tela" in linha for linha in linhas) == 1
+    assert any("SEM PIXELS - joao" in linha for linha in linhas)
 
 
 async def test_o_lote_preserva_a_ordem_dos_eventos():

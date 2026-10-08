@@ -34,10 +34,11 @@ from game.colors import (
     cor_automatica,
     cores_do_config,
     lista_da_paleta,
-    parse_cor,
+    separar_cor,
 )
 from game.coordinates import Pedido, parse_pedido, parece_pintura
 from game.inventory import Inventario
+from game.narrador import Narrador
 from game.painting import MOTIVO_SALDO, ServicoPintura, motivo_legivel
 from game.ranking import Ranking
 from game.rewards import AcumuladorCurtidas, pixels_do_evento
@@ -110,12 +111,14 @@ class Pipeline:
         ranking: Ranking | None = None,
         multiplicador_fn: Callable[[], float] | None = None,
         curtidas: AcumuladorCurtidas | None = None,
+        narrador: Narrador | None = None,
     ):
         self.cfg = cfg
         self.servico = servico
         self.inventario = inventario
         self.db = db
         self.ranking = ranking
+        self.narrador = narrador
 
         self.canvas: CanvasModel = servico.canvas
         self.cols = self.canvas.cols
@@ -139,6 +142,9 @@ class Pipeline:
 
         self.paleta, self.especiais = cores_do_config(cfg)
         self.lista_paleta = lista_da_paleta(self.paleta)
+
+        # Quem ja foi saudado nesta execucao. Ver `_boas_vindas`.
+        self._vindos: set[str] = set()
 
     # ------------------------------------------------------------------
     # Entrada
@@ -174,6 +180,12 @@ class Pipeline:
 
         if evento.type == EventType.COMMENT:
             mensagens += await self._comentar(evento, handle)
+
+        if evento.type == EventType.JOIN:
+            # Entrar nao paga pixel (`pixels_do_evento` ja devolveu zero). O
+            # que a chegada vale e o oi pelo nome — a unica resposta que o
+            # jogo da a quem ainda nao fez nada.
+            mensagens += self._boas_vindas(evento, handle)
 
         return mensagens
 
@@ -212,12 +224,20 @@ class Pipeline:
                 self.inventario.saldo(handle),
             )
 
+            if self.narrador is not None:
+                # A voz e assincrona de proposito: o credito e o aviso no
+                # telao saem agora; a fala entra na fila do Narrador e sai
+                # quando der, sem segurar o evento.
+                self.narrador.anunciar_presente(
+                    evento.actor(), quantidade, nome, pixels
+                )
+
         unidade = "PIXEL" if pixels == 1 else "PIXELS"
         return [
             {
                 "type": "toast",
                 "kind": "reward",
-                "text": f"🌹 {evento.actor()} ganhou {pixels} {unidade}!",
+                "text": self._texto_do_credito(evento, pixels, unidade),
             },
             {
                 "type": "inventario",
@@ -227,6 +247,30 @@ class Pipeline:
             self._atividade(evento, handle, pixels),
         ]
 
+    def _texto_do_credito(self, evento: LiveEvent, pixels: int, unidade: str) -> str:
+        """O aviso de quem ganhou pixel, com a CARA do que pagou por ele.
+
+        O texto era um so para todo credito, com um 🌹 fixo — e por isso a
+        curtida que virava pixel chegava na tela com cara de rosa: quem curtiu
+        nao se reconhecia no aviso, e quem so assistia lia tudo como presente.
+        Cada tipo diz o proprio verbo, e o emoji e o que separa um do outro
+        num relance: ❤️ e curtida, ➕ e seguidor, 🔁 e compartilhamento.
+        """
+        nome = evento.actor()
+
+        if evento.type == EventType.GIFT:
+            quantidade = int(evento.quantity or 1)
+            presente = evento.gift_name or "presente"
+            return f"🌹 {nome} mandou {quantidade}x {presente} e ganhou {pixels} {unidade}!"
+
+        if evento.type == EventType.LIKE:
+            return f"❤️ {nome} curtiu e ganhou {pixels} {unidade}!"
+
+        if evento.type == EventType.FOLLOW:
+            return f"➕ {nome} seguiu e ganhou {pixels} {unidade}!"
+
+        return f"🔁 {nome} compartilhou e ganhou {pixels} {unidade}!"
+
     # ------------------------------------------------------------------
     # Comentario
     # ------------------------------------------------------------------
@@ -234,9 +278,30 @@ class Pipeline:
     async def _comentar(self, evento: LiveEvent, handle: str) -> list[dict]:
         texto = evento.text or ""
 
-        # A coordenada vem primeiro: pintar e o que a pessoa veio fazer. Pode
-        # ser UMA celula ou a lista inteira — quem decide e o parser, e o
-        # pipeline nao precisa saber a diferenca.
+        # A cor pode ABRIR o comentario, sozinha ("/cor roxo") ou colada na
+        # coordenada ("/vermelho W1,X1,..."). Quem esta pintando um desenho
+        # inteiro de uma cor escreve a cor primeiro; sem esta leitura a lista
+        # sairia na cor ANTIGA e a cor pedida viraria "peca ilegivel" — foi
+        # exatamente o que aconteceu, com "NAO ENTENDI: vermelho" na tela.
+        #
+        # Cor sem coordenada nenhuma depois e so a troca; com coordenada, a
+        # mensagem inteira e UMA jogada. Cor seguida de conversa ("vermelho e
+        # minha cor favorita") nao e comando nenhum e cai no fluxo normal,
+        # calada, como qualquer conversa.
+        achado = separar_cor(texto, self.paleta, self.especiais)
+        if achado is not None:
+            cor, resto = achado
+            if not resto:
+                return await self._trocar_cor(evento, handle, cor)
+
+            pedido = parse_pedido(resto, self.cols, self.rows)
+            if pedido.coordenadas:
+                trocou = await self._trocar_cor(evento, handle, cor, pintando=True)
+                return trocou + await self._pintar(evento, handle, pedido)
+
+        # Sem cor no comeco, o que resta e a coordenada: pintar e o que a
+        # pessoa veio fazer. Pode ser UMA celula ou a lista inteira — quem
+        # decide e o parser, e o pipeline nao precisa saber a diferenca.
         #
         # O pedido entra desde que UMA celula tenha dado para ler. Derrubar a
         # lista toda por causa de uma peca ruim custa o desenho inteiro: a
@@ -246,10 +311,6 @@ class Pipeline:
         pedido = parse_pedido(texto, self.cols, self.rows)
         if pedido.coordenadas:
             return await self._pintar(evento, handle, pedido)
-
-        cor = parse_cor(texto, self.paleta, self.especiais)
-        if cor is not None:
-            return await self._trocar_cor(evento, handle, cor)
 
         # O `/pontos` vem ANTES do "nao entendi" porque comeca com barra — o
         # mesmo sinal que faz `parece_pintura` achar que alguem tentou pintar.
@@ -372,7 +433,9 @@ class Pipeline:
 
         return mensagens
 
-    async def _trocar_cor(self, evento: LiveEvent, handle: str, cor: Cor) -> list[dict]:
+    async def _trocar_cor(
+        self, evento: LiveEvent, handle: str, cor: Cor, pintando: bool = False
+    ) -> list[dict]:
         if self.ranking is not None:
             self.ranking.registrar(
                 handle, nome=evento.actor(), cor=cor.hex, efeito=cor.efeito
@@ -382,21 +445,20 @@ class Pipeline:
             handle, display_name=evento.actor(), color=cor.hex, effect=cor.efeito
         )
 
-        return [
-            {
-                "type": "toast",
-                "kind": "cor",
-                # O aviso termina com o PROXIMO PASSO, nao com a cor. Trocar a
-                # cor nao pinta nada: quem manda so `/cor vermelho` no painel le
-                # "agora pinta de VERMELHO", olha a grid intacta e acha que
-                # travou. O aviso e o unico retorno que essa pessoa recebe, e o
-                # exemplo concreto e o que a ensina a terminar a jogada.
-                "text": (
-                    f"🎨 {evento.actor()} agora pinta de {self._rotulo_da_cor(cor)}!"
-                    " Falta a rosa e a coordenada (ex: H5)"
-                ),
-            }
-        ]
+        # O aviso termina com o PROXIMO PASSO, nao com a cor. Trocar a cor nao
+        # pinta nada: quem manda so `/cor vermelho` no painel le "agora pinta
+        # de VERMELHO", olha a grid intacta e acha que travou. O aviso e o
+        # unico retorno que essa pessoa recebe, e o exemplo concreto e o que a
+        # ensina a terminar a jogada.
+        #
+        # Com as coordenadas no MESMO comentario nao falta passo nenhum — a
+        # jogada ja terminou, e pedir a coordenada de novo seria pedir o que a
+        # pessoa acabou de escrever.
+        texto = f"🎨 {evento.actor()} agora pinta de {self._rotulo_da_cor(cor)}!"
+        if not pintando:
+            texto += " Falta a rosa e a coordenada (ex: H5)"
+
+        return [{"type": "toast", "kind": "cor", "text": texto}]
 
     # ------------------------------------------------------------------
     # Auxiliares
@@ -448,10 +510,11 @@ class Pipeline:
 
         E o log que o streamer le ao vivo — presente, combo de curtidas,
         seguidor, compartilhamento —, e por isso ele vai estruturado, com o
-        numero cru de cada tipo: a quantidade do presente, o TOTAL de curtidas
-        da pessoa na sala (`like_total`; num combo isso e o tamanho do combo),
-        e o que aquilo virou em pixels. Quem monta a frase e o painel, que e
-        quem sabe que emoji e que verbo usar.
+        numero cru de cada tipo: a quantidade do presente, o total de curtidas
+        da SALA (`like_total`, o mesmo contador que a LIVE mostra — num combo
+        de uma pessoa so ele anda no ritmo dela), e o que aquilo virou em
+        pixels. Quem monta a frase e o painel, que e quem sabe que emoji e que
+        verbo usar.
         """
         if evento.type == EventType.GIFT:
             kind, amount = "gift", int(evento.quantity or 1)
@@ -471,6 +534,38 @@ class Pipeline:
             "pixels": pixels,
             "saldo": self.inventario.saldo(handle),
         }
+
+    def _boas_vindas(self, evento: LiveEvent, handle: str) -> list[dict]:
+        """O oi de quem ACABOU de chegar, pelo nome.
+
+        Entrar e o unico momento em que a pessoa esta olhando para a tela sem
+        estar no meio de outra coisa. Ver o proprio nome no telao segundos
+        depois de entrar e o que separa "mais uma LIVE" de "aqui tem alguem do
+        outro lado" — e o convite para pintar vai junto, porque quem chegou
+        ainda nao sabe o que a tela espera dela.
+
+        Cada handle e saudado UMA vez por execucao: queda de rede faz o
+        proprio TikTok reentregar a chegada, e "ENTROU" repetido vira ruido
+        no telao — justamente para quem ja estava prestando atencao.
+        """
+        if handle in self._vindos:
+            return []
+
+        self._vindos.add(handle)
+
+        if self.narrador is not None:
+            # A voz entra na mesma fila do presente e sai quando der, sem
+            # segurar o evento. O dedupe e o mesmo do aviso: quem reentra nao
+            # ouve o proprio nome de novo.
+            self.narrador.anunciar_entrada(evento.actor())
+
+        return [
+            {
+                "type": "toast",
+                "kind": "info",
+                "text": f"👋 {evento.actor()} ENTROU — pinte seu primeiro pixel!",
+            }
+        ]
 
     def _cor_de(self, handle: str) -> Cor:
         """A cor (e o efeito) com que esta pessoa pinta agora."""

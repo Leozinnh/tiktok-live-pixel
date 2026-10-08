@@ -50,6 +50,7 @@ try:  # pragma: no cover - depende do ambiente
         DisconnectEvent,
         FollowEvent,
         GiftEvent,
+        JoinEvent,
         LikeEvent,
         ShareEvent,
     )
@@ -183,7 +184,7 @@ def evento_de_like(obj: Any, total_anterior: int = 0) -> LiveEvent | None:
 
 
 def evento_de_presenca(obj: Any, tipo: EventType) -> LiveEvent:
-    """Seguidor novo ou compartilhamento: mesmo formato, so muda o tipo."""
+    """Seguidor novo, compartilhamento ou chegada: mesmo formato, so o tipo."""
     user = getattr(obj, "user", None)
     return LiveEvent(
         type=tipo,
@@ -423,3 +424,7 @@ class TikTokLiveAdapter:
         @client.on(ShareEvent)
         async def _compartilhou(evento: Any) -> None:
             self.queue.put(evento_de_presenca(evento, EventType.SHARE))
+
+        @client.on(JoinEvent)
+        async def _entrou(evento: Any) -> None:
+            self.queue.put(evento_de_presenca(evento, EventType.JOIN))

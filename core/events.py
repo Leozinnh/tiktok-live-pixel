@@ -16,6 +16,7 @@ class EventType(str, Enum):
     LIKE = "like"
     FOLLOW = "follow"
     SHARE = "share"
+    JOIN = "join"
     SYSTEM = "system"
 
 

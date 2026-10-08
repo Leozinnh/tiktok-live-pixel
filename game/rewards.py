@@ -26,7 +26,7 @@ from collections import defaultdict
 from core.events import EventType, LiveEvent
 from game.colors import achatar
 
-POR_PIXEL_PADRAO = 20
+POR_PIXEL_PADRAO = 50
 MAX_CURTIDAS_PADRAO = 10
 MULTIPLICADOR_PADRAO = 10
 PRESENTE_DESCONHECIDO_PADRAO = 1
@@ -43,10 +43,10 @@ def _inteiro(valor, padrao: int) -> int:
 class AcumuladorCurtidas:
     """Converte curtidas em pixels, sem perder o troco.
 
-    Vinte curtidas valem um pixel. Mas ninguem curte de vinte em vinte: a
-    biblioteca manda um evento por curtida, cada um com delta 1. Sem guardar o
-    resto, quem curte 19 vezes nao ganha nada — e a regra "20 curtidas = 1
-    pixel" seria mentira na pratica.
+    Cinquenta curtidas valem um pixel. Mas ninguem curte de cinquenta em
+    cinquenta: a biblioteca manda um evento por curtida, cada um com delta 1.
+    Sem guardar o resto, quem curte 49 vezes nao ganha nada — e a regra "50
+    curtidas = 1 pixel" seria mentira na pratica.
 
     O resto e por pessoa: as 19 curtidas de uma nao completam as 19 de outra.
     """

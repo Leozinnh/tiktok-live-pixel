@@ -13,6 +13,11 @@ uvicorn[standard]>=0.30,<1.0
 # rodar o jogo, e sobrevive a restart sem servidor de banco.
 aiosqlite>=0.20,<1.0
 
+# A voz do jogo: o agradecimento falado de cada presente. E o mesmo motor do
+# `tts.py` (voz pt-BR-FranciscaNeural). A REPRODUCAO nao depende desta lib:
+# quem toca o mp3 e o MCI do proprio Windows, via ctypes, sem pacote de audio.
+edge-tts>=7.2,<8.0
+
 # Desenvolvimento
 pytest>=8.0,<9.0
 pytest-asyncio>=0.24,<2.0

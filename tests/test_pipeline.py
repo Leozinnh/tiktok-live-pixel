@@ -89,7 +89,7 @@ def primeira(mensagens: list[dict], tipo: str) -> dict | None:
     return None
 
 
-async def montar(tmp_path, *, cfg=None, multiplicador=None) -> Cenario:
+async def montar(tmp_path, *, cfg=None, multiplicador=None, narrador=None) -> Cenario:
     cfg = cfg or cfg_teste()
     canvas = CanvasModel(COLS, ROWS)
     inventario = Inventario()
@@ -116,6 +116,7 @@ async def montar(tmp_path, *, cfg=None, multiplicador=None) -> Cenario:
         db=db,
         ranking=ranking,
         multiplicador_fn=multiplicador,
+        narrador=narrador,
     )
     return Cenario(pipeline, canvas, inventario, db, ranking)
 
@@ -230,6 +231,40 @@ async def test_presente_fica_registrado_no_banco(tmp_path):
     await c.db.fechar()
     assert joao is not None
     assert joao["gifts_received"] == 1
+
+
+class NarradorEspiao:
+    """Duble do Narrador: anota o que falaria, sem gerar nem tocar nada."""
+
+    def __init__(self):
+        self.falas: list[tuple[str, int, str]] = []
+        self.entradas: list[str] = []
+
+    def anunciar_presente(self, nome, quantidade, presente, pixels) -> None:
+        self.falas.append((nome, quantidade, presente))
+
+    def anunciar_entrada(self, nome) -> None:
+        self.entradas.append(nome)
+
+
+async def test_so_o_presente_vira_fala_no_ar(tmp_path):
+    """A voz e do presente: curtida, seguir e share creditam em silencio."""
+    espiao = NarradorEspiao()
+    c = await montar(tmp_path, narrador=espiao)
+
+    await c.enviar(
+        EventType.GIFT,
+        username="ana",
+        display_name="Ana",
+        gift_name="Rose",
+        quantity=3,
+    )
+    await c.enviar(EventType.LIKE, username="joao", like_delta=40)
+    await c.enviar(EventType.FOLLOW, username="bia", display_name="Bia")
+    await c.enviar(EventType.SHARE, username="caio", display_name="Caio")
+
+    await c.db.fechar()
+    assert espiao.falas == [("Ana", 3, "Rose")]
 
 
 # --------------------------------------------------------------------------
@@ -356,6 +391,39 @@ async def test_presente_gera_um_credito_no_log_do_painel(tmp_path):
     assert credito["amount"] == 3
     assert credito["gift"] == "Rose"
     assert credito["pixels"] == 3
+
+
+async def test_cada_tipo_de_ganho_avisa_no_telao_com_a_propria_cara(tmp_path):
+    """O telao distingue de onde o pixel veio — antes, nao distinguia.
+
+    Todo credito saia com a MESMA frase e o mesmo 🌹: o pixel da curtida
+    chegava na tela com cara de rosa, e quem curtiu nao se reconhecia no
+    aviso. Cada tipo agora tem o proprio emoji e o proprio verbo, e este
+    teste trava isso: quatro ganhos, quatro avisos diferentes.
+    """
+    c = await montar(tmp_path)
+    casos = [
+        (EventType.GIFT, dict(username="ana", display_name="Ana", gift_name="Rose")),
+        (
+            EventType.LIKE,
+            dict(username="bruno", display_name="Bruno", like_delta=20, like_total=20),
+        ),
+        (EventType.FOLLOW, dict(username="carla", display_name="Carla")),
+        (EventType.SHARE, dict(username="duda", display_name="Duda")),
+    ]
+
+    avisos = []
+    for tipo, kwargs in casos:
+        aviso = primeira(await c.enviar(tipo, **kwargs), "toast")
+        assert aviso is not None, f"o {tipo} creditou e nao avisou nada no telao"
+        avisos.append(aviso["text"])
+
+    await c.db.fechar()
+    assert len(set(avisos)) == 4, f"os avisos se repetem: {avisos}"
+    # E o da CURTIDA se le como curtida — o pedido que criou este teste.
+    assert "❤️" in avisos[1]
+    assert "curtiu" in avisos[1]
+    assert "1 PIXEL" in avisos[1]
 
 
 # --------------------------------------------------------------------------
@@ -651,6 +719,133 @@ async def test_comando_de_cor_invalido_avisa_e_nao_muda(tmp_path):
     await c.db.fechar()
     assert "toast" in tipos(mensagens)
     assert pintura["color"] in PALETA.values()
+
+
+async def test_a_cor_colada_na_coordenada_troca_e_pinta(tmp_path):
+    """Quem escreve "/vermelho W1,X1" pinta na cor PEDIDA — na mesma mensagem.
+
+    Era o inverso: a lista saia na cor antiga e a cor virava "peca ilegivel",
+    com "NAO ENTENDI: vermelho" no telao — a resposta errada para uma jogada
+    certa. Escrever a cor primeiro e o jeito natural de quem esta pintando um
+    desenho inteiro de uma cor so.
+    """
+    c = await montar(tmp_path)
+    c.creditar("joao", 3)
+
+    mensagens = await c.enviar(
+        EventType.COMMENT, username="joao", text="/vermelho A1, B2"
+    )
+    pinturas = [m for m in mensagens if m["type"] == "pixel_painted"]
+
+    # A cor vale para a proxima jogada tambem: nao e so do comentario colado.
+    seguinte = primeira(
+        await c.enviar(EventType.COMMENT, username="joao", text="C3"), "pixel_painted"
+    )
+
+    await c.db.fechar()
+    assert len(pinturas) == 2
+    assert {p["color"] for p in pinturas} == {"#FF3B5C"}
+    assert seguinte["color"] == "#FF3B5C"
+    assert not any("NAO ENTENDI" in str(m.get("text", "")) for m in mensagens)
+
+
+async def test_o_aviso_da_cor_colada_nao_pede_a_coordenada(tmp_path):
+    """Com a coordenada no mesmo comentario, a jogada ja terminou.
+
+    Mandar "falta a coordenada" aqui seria pedir o que a pessoa acabou de
+    escrever — e ela reenviaria a lista, pagando duas vezes pelo mesmo pixel.
+    """
+    c = await montar(tmp_path)
+    c.creditar("joao", 1)
+
+    mensagens = await c.enviar(EventType.COMMENT, username="joao", text="/roxo A1")
+    aviso = primeira(mensagens, "toast")
+
+    await c.db.fechar()
+    assert "ROXO" in aviso["text"].upper()
+    assert "H5" not in aviso["text"]
+
+
+async def test_a_cor_colada_com_especial_leva_o_efeito(tmp_path):
+    c = await montar(tmp_path)
+    c.creditar("joao", 1)
+
+    mensagens = await c.enviar(EventType.COMMENT, username="joao", text="fogo A1")
+    pintura = primeira(mensagens, "pixel_painted")
+
+    await c.db.fechar()
+    assert pintura["effect"] == "fogo"
+    assert pintura["color"] == "#FF6B1A"
+
+
+async def test_palavra_de_cor_no_meio_da_conversa_nao_vira_comando(tmp_path):
+    """Conversa que por acaso comeca com uma cor segue calada, como sempre."""
+    from game.colors import cor_automatica
+
+    c = await montar(tmp_path)
+    c.creditar("joao", 1)
+
+    mensagens = await c.enviar(
+        EventType.COMMENT, username="joao", text="vermelho e a minha cor favorita"
+    )
+    pintura = primeira(
+        await c.enviar(EventType.COMMENT, username="joao", text="A1"), "pixel_painted"
+    )
+
+    await c.db.fechar()
+    assert mensagens == []
+    assert pintura["color"] == cor_automatica("joao", list(PALETA.values()))
+
+
+# --------------------------------------------------------------------------
+# Entrada na LIVE
+# --------------------------------------------------------------------------
+
+
+async def test_quem_entra_ganha_boas_vindas_no_telao(tmp_path):
+    """O nome proprio no telao segundos depois de entrar — e o convite junto.
+
+    Entrar e o unico momento em que a pessoa esta olhando para a tela sem
+    estar no meio de outra coisa; e a chegada NAO paga pixel nenhum.
+    """
+    c = await montar(tmp_path)
+
+    mensagens = await c.enviar(EventType.JOIN, username="joao", display_name="Joao")
+
+    await c.db.fechar()
+    aviso = primeira(mensagens, "toast")
+    assert aviso is not None
+    assert aviso["kind"] == "info"
+    assert "Joao" in aviso["text"]
+    assert "ENTROU" in aviso["text"]
+    assert c.inventario.saldo("joao") == 0, "entrar nao pode pagar pixel"
+
+
+async def test_entrar_de_novo_nao_repete_o_oi(tmp_path):
+    """Queda de rede reentrega a chegada; "ENTROU" repetido viraria ruido."""
+    c = await montar(tmp_path)
+
+    await c.enviar(EventType.JOIN, username="joao", display_name="Joao")
+    mensagens = await c.enviar(EventType.JOIN, username="joao", display_name="Joao")
+
+    await c.db.fechar()
+    assert mensagens == []
+
+
+async def test_a_chegada_vira_fala_uma_vez_so(tmp_path):
+    """Quem entra ouve o proprio nome — na voz e uma unica vez, como o aviso.
+
+    A reentrega da rede nao pode fazer a pessoa ouvir o proprio nome de novo;
+    o dedupe e um so, para o telao e para a voz.
+    """
+    espiao = NarradorEspiao()
+    c = await montar(tmp_path, narrador=espiao)
+
+    await c.enviar(EventType.JOIN, username="joao", display_name="Joao")
+    await c.enviar(EventType.JOIN, username="joao", display_name="Joao")
+
+    await c.db.fechar()
+    assert espiao.entradas == ["Joao"]
 
 
 # --------------------------------------------------------------------------

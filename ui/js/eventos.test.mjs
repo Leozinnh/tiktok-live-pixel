@@ -8,11 +8,12 @@
  *
  * Hoje sao dois tipos de efeito, e o teste separa os dois:
  *
- * - os ENFEITES (o glitch do CAOS, a mira do DESAFIO, os riscos do TURBO)
- *   desenham por cima do quadro;
- * - os efeitos de CELULA (ARCO-IRIS, BRILHO) nao desenham nada por cima —
- *   trocam a cor das celulas pintadas, e por isso a conta de cor deles e
- *   testada aqui, celula a celula.
+ * - os ENFEITES (o glitch do CAOS, a mira do DESAFIO, os riscos do TURBO e a
+ *   festa da HORA DO PIXEL) desenham por cima do quadro;
+ * - os efeitos de CELULA (ARCO-IRIS e o feixe do BRILHO) trocam a cor das
+ *   celulas pintadas, e por isso a conta de cor deles e testada aqui, celula
+ *   a celula. O BRILHO e hibrido: alem do feixe, ele tem a festa — que e o
+ *   que aparece quando o quadro esta vazio.
  *
  * Um canvas nao tem outra coisa observavel alem da sequencia de comandos que
  * ele recebe — entao e isso que o teste olha.
@@ -65,7 +66,7 @@ function pinturas(comandos) {
 }
 
 test("cada ENFEITE pinta alguma coisa por cima do quadro", () => {
-  for (const efeito of ["caos", "desafio", "rastro"]) {
+  for (const efeito of ["caos", "desafio", "rastro", "brilho"]) {
     const { ctx, comandos } = contextoFalso();
     desenharEvento(ctx, efeito, AREA, 0.7);
 
@@ -76,28 +77,57 @@ test("cada ENFEITE pinta alguma coisa por cima do quadro", () => {
   }
 });
 
-test("os efeitos de CELULA nao pintam NADA por cima: quem muda sao as celulas", () => {
+test("a HORA DO PIXEL mostra a festa mesmo com o quadro VAZIO", () => {
+  // O pedido que criou este teste: "o efeito hora do pixel so mostra o
+  // badge". O feixe do brilho so acende o que JA esta pintado — num quadro
+  // vazio ele nao tem o que acender, e o evento virava so o banner. A moldura
+  // e a chuva sao a festa que nao depende de ninguem.
+  for (const t of [0, 0.9, 4.2]) {
+    const { ctx, comandos } = contextoFalso();
+    desenharEvento(ctx, "brilho", AREA, t);
+    assert.ok(
+      pinturas(comandos).length > 0,
+      `com t=${t} a hora do pixel nao pintou nada: num quadro vazio ela e so o badge`
+    );
+  }
+});
+
+test("a moldura do BRILHO fica FORA do quadro — no vao da regua", () => {
+  // O corte do quadro (o `clip`) comeria qualquer coisa desenhada para fora
+  // dele; a moldura so aparece porque e desenhada ANTES do corte. Se alguem a
+  // mover para dentro do laco cortado, este teste acusa: ela tem que ter
+  // pelo menos uma volta comecando para fora da area da grade.
+  const { ctx, comandos } = contextoFalso();
+  desenharEvento(ctx, "brilho", AREA, 0.4);
+
+  const molduras = comandos.filter((c) => c[0] === "strokeRect");
+  assert.ok(molduras.length > 0, "a moldura nao foi desenhada");
+  assert.ok(
+    molduras.some((m) => m[1] < AREA.x || m[2] < AREA.y),
+    "a moldura foi desenhada dentro do quadro"
+  );
+});
+
+test("o ARCO-IRIS nao pinta NADA por cima: quem muda sao as celulas", () => {
   // O pedido que este teste protege: "o modo arco iris ainda fica passando uma
   // div pra la e pra ca, em vez de simplesmente mudar de cor os quadrados ja
   // pintados". Se alguem reintroduzir uma faixa por cima do quadro, ela
-  // reaparece aqui como comando de desenho — e o teste acusa. O BRILHO da
-  // HORA DO PIXEL e da mesma familia: a luz acende as celulas pintadas, nunca
-  // passa por cima delas.
-  for (const efeito of ["arco_iris", "brilho"]) {
-    for (const t of [0, 0.7, 3.1]) {
-      const { ctx, comandos } = contextoFalso();
-      desenharEvento(ctx, efeito, AREA, t);
-      assert.deepEqual(
-        comandos,
-        [],
-        `com t=${t} o ${efeito} mexeu no quadro por cima: ele so pode trocar a cor das celulas`
-      );
-    }
+  // reaparece aqui como comando de desenho — e o teste acusa. (O BRILHO
+  // tambem troca a cor das celulas, mas desde a melhoria da HORA DO PIXEL ele
+  // TAMBEM tem enfeite proprio — por isso ele nao entra nesta lista.)
+  for (const t of [0, 0.7, 3.1]) {
+    const { ctx, comandos } = contextoFalso();
+    desenharEvento(ctx, "arco_iris", AREA, t);
+    assert.deepEqual(
+      comandos,
+      [],
+      `com t=${t} o arco_iris mexeu no quadro por cima: ele so pode trocar a cor das celulas`
+    );
   }
 });
 
 test("o ENFEITE ANIMA: a tinta de agora nao e a de um segundo atras", () => {
-  for (const efeito of ["caos", "desafio", "rastro"]) {
+  for (const efeito of ["caos", "desafio", "rastro", "brilho"]) {
     const a = contextoFalso();
     const b = contextoFalso();
 

@@ -9,17 +9,22 @@
  * Sao dois tipos de efeito, e a diferenca decide onde cada um mora:
  *
  * - o ENFEITE por cima do quadro — o glitch do CAOS, a mira do DESAFIO, os
- *   riscos do PIXEL TURBO — e desenhado aqui, e quem chama e o
- *   `renderer.desenhar`;
- * - o efeito de CELULA — o ARCO-IRIS e o BRILHO da HORA DO PIXEL — nao
- *   desenha nada por cima: troca a COR das celulas ja pintadas, e quem pinta
- *   celula e o renderer. Aqui moram so as contas de cor (`corDaCelula`).
+ *   riscos do PIXEL TURBO e a festa da HORA DO PIXEL — e desenhado aqui, e
+ *   quem chama e o `renderer.desenhar`;
+ * - o efeito de CELULA — o ARCO-IRIS e o feixe do BRILHO — troca a COR das
+ *   celulas ja pintadas, e quem pinta celula e o renderer. Aqui moram so as
+ *   contas de cor (`corDaCelula`).
  *
  * A regra que separa os dois: o enfeite decora a TELA, o efeito de celula
  * muda o DESENHO. Quando os dois disputam o mesmo pixel, quem decide e o que
  * a audiencia precisa ver — e o que ela pagou para ver e o desenho. Por isso
  * o ARCO-IRIS deixou de ser uma faixa passando por cima: a faixa tapava os
  * quadrados que a sala acabou de comprar.
+ *
+ * O BRILHO e os dois ao mesmo tempo, e nao contradiz a regra: o feixe acende
+ * as celulas pintadas, e a festa (moldura + chuva de pixels dourados) toma a
+ * tela. O feixe sozinho nao bastava — ele so existe onde alguem JA pintou, e
+ * num quadro vazio a HORA DO PIXEL era so o banner.
  *
  * Tudo aqui e desenhado por cima da grade, no MESMO canvas: um terceiro canvas
  * so para o enfeite custaria mais memoria do que o enfeite inteiro. E nada
@@ -89,6 +94,21 @@ const FORCA_DO_BRILHO = 0.8;
 
 /** Quantos riscos de velocidade cruzam o quadro no PIXEL TURBO. */
 const RASTROS_DO_TURBO = 8;
+
+/**
+ * Quantos pixels dourados caem ao mesmo tempo na HORA DO PIXEL.
+ *
+ * Vinte e dois: num quadro de ~25 colunas da cerca de um pixel por coluna, e
+ * a chuva fica presente sem virar cortina — ela cobre a tela, mas nao a ponto
+ * de esconder o desenho, que foi o erro da faixa antiga do ARCO-IRIS.
+ */
+const DESTELOS_DO_BRILHO = 22;
+
+/** As cores da chuva, na familia do OURO: amarelo, branco quente e ambar. */
+const CORES_DO_DESTELO = ["#ffd93d", "#fff1c2", "#ffb02e"];
+
+/** A grossura da moldura acesa da HORA DO PIXEL, em pixels de CSS. */
+const MOLDURA_DO_BRILHO = 8;
 
 /**
  * Um numero estavel entre 0 e 1 a partir de um inteiro.
@@ -239,17 +259,22 @@ export function deslocamentoDoEvento(efeito, t = 0) {
 
 /**
  * Desenha o ENFEITE do evento por cima da grade. `area` e o retangulo da
- * grade, em pixels de CSS.
+ * grade, em pixels de CSS — mais `cols`/`rows`, que a chuva da HORA DO PIXEL
+ * usa para cair em tamanho de celula.
  *
- * Os efeitos de CELULA (ARCO-IRIS, BRILHO) nao estao aqui de proposito: eles
- * nao pintam nada por cima — trocam a cor das celulas pintadas, dentro do laco
- * do renderer (ver `corDaCelula`). Sem efeito conhecido nao desenha NADA — nem
- * um retangulo transparente: um evento sem enfeite e so multiplicador e banner,
- * e nao pode custar trabalho por quadro.
+ * Sem efeito conhecido nao desenha NADA — nem um retangulo transparente: um
+ * evento sem enfeite e so multiplicador e banner, e nao pode custar trabalho
+ * por quadro.
  */
 export function desenharEvento(ctx, efeito, area, t = 0) {
   if (!area) return;
-  if (efeito !== "caos" && efeito !== "desafio" && efeito !== "rastro") return;
+
+  const enfeites = ["caos", "desafio", "rastro", "brilho"];
+  if (!enfeites.includes(efeito)) return;
+
+  // A moldura da HORA DO PIXEL fica no vao entre a grade e a regua, FORA do
+  // quadro — e por isso e desenhada antes do corte, que a comeria.
+  if (efeito === "brilho") molduraDoBrilho(ctx, area, t);
 
   ctx.save();
 
@@ -265,8 +290,10 @@ export function desenharEvento(ctx, efeito, area, t = 0) {
     glitchDoCaos(ctx, area, t);
   } else if (efeito === "desafio") {
     miraDoDesafio(ctx, area, t);
-  } else {
+  } else if (efeito === "rastro") {
     rastrosDoTurbo(ctx, area, t);
+  } else {
+    chuvaDoBrilho(ctx, area, t);
   }
 
   ctx.restore();
@@ -442,4 +469,81 @@ function rastrosDoTurbo(ctx, area, t) {
     ctx.fillStyle = "#d8feff";
     ctx.fillRect(x, y - altura * 0.4, altura * 2.4, altura * 1.8);
   }
+}
+
+/**
+ * A moldura acesa em volta do quadro, na HORA DO PIXEL.
+ *
+ * E o sinal que nao depende de ninguem: mesmo sem uma celula pintada, e mesmo
+ * com a chuva no meio de uma pausa, a borda dourada respirando diz que a hora
+ * esta rendendo dobro. Duas voltas — a linha fina e nitida por dentro, o halo
+ * largo e fraco por fora — dao o aspecto de borda ACESA, e nao de borda
+ * desenhada: a mesma leitura do glitch do CAOS, que soma luz em vez de tapar.
+ */
+function molduraDoBrilho(ctx, area, t) {
+  const respiro = 0.5 + 0.5 * Math.sin(t * 3.1);
+  const folga = MOLDURA_DO_BRILHO;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.strokeStyle = "#ffd93d";
+  ctx.lineWidth = 3;
+  ctx.globalAlpha = 0.35 + 0.45 * respiro;
+  ctx.strokeRect(
+    area.x - folga,
+    area.y - folga,
+    area.w + folga * 2,
+    area.h + folga * 2
+  );
+
+  ctx.strokeStyle = OURO;
+  ctx.lineWidth = folga * 2;
+  ctx.globalAlpha = 0.06 + 0.1 * respiro;
+  ctx.strokeRect(
+    area.x - folga * 2,
+    area.y - folga * 2,
+    area.w + folga * 4,
+    area.h + folga * 4
+  );
+  ctx.restore();
+}
+
+/**
+ * A chuva de pixels dourados da HORA DO PIXEL.
+ *
+ * O feixe de luz so acende o que JA esta pintado; num quadro vazio — ou quase
+ * — a HORA DO PIXEL era so o banner. A chuva e a festa que nao depende do
+ * desenho de ninguem: pixels dourados do tamanho de uma celula caindo pelo
+ * quadro inteiro, como moeda caindo — o proprio nome do evento convidando a
+ * sala a pintar enquanto ele durar.
+ *
+ * Cada pixel cai sempre na MESMA coluna, no mesmo ritmo e no mesmo tamanho (o
+ * sorteio e pelo indice, via `ruido`); o que muda a cada quadro e so a
+ * posicao, que e o que le como queda. O brilho acende no meio do caminho e
+ * apaga nas pontas: o pixel entra e sai de cena sem piscar de um quadro para
+ * o outro.
+ */
+function chuvaDoBrilho(ctx, area, t) {
+  const cols = Math.max(1, Math.round(area.cols || 25));
+  const cela = area.w / cols;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+
+  for (let i = 0; i < DESTELOS_DO_BRILHO; i += 1) {
+    const coluna = Math.floor(ruido(i * 1.13) * cols);
+    const tamanho = cela * (0.45 + ruido(i * 5.9) * 0.6);
+    const velocidade = 0.3 + 0.55 * ruido(i * 3.7); // quedas por segundo
+    const progresso = (t * velocidade + ruido(i * 7.31)) % 1;
+
+    ctx.globalAlpha = 0.9 * Math.sin(Math.PI * progresso);
+    ctx.fillStyle = CORES_DO_DESTELO[i % CORES_DO_DESTELO.length];
+    ctx.fillRect(
+      area.x + coluna * cela + (cela - tamanho) / 2,
+      area.y + progresso * (area.h - tamanho),
+      tamanho,
+      tamanho
+    );
+  }
+  ctx.restore();
 }
