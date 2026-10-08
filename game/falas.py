@@ -126,6 +126,60 @@ FALAS = [
     "{nome} mandou {quantidade}{presente}! Valeu, valeu!",
     "Muito obrigado, {nome}! {quantidade}{presente} é demais!",
     "Que beleza! {quantidade}{presente} do {nome}! Obrigado!",
+
+    # --- Lendárias ---
+    "Isso entra pra história da live! {nome} mandou {quantidade}{presente}! Valeu!",
+    "Anota aí! {nome} mandou {quantidade}{presente}! Isso é lenda, obrigado!",
+    "Nível lendário! {nome} mandou {quantidade}{presente}! Muito obrigado, família!",
+    "Chamem os jornais! {nome} mandou {quantidade}{presente}! Valeu demais!",
+    "Hoje tem festa! {nome} mandou {quantidade}{presente}! Gratidão total!",
+    "Recorde de carinho batido! {nome} mandou {quantidade}{presente}! Obrigadão!",
+    "Isso é coisa de campeão! {nome} mandou {quantidade}{presente}! Valeu!",
+    "Prepara que a tela vai brilhar! {nome} mandou {quantidade}{presente}! Obrigado!",
+    "{nome} chegou com tudo! {quantidade}{presente} na live! Valeu, família!",
+    "Fogos de artifício pro {nome}! Mandou {quantidade}{presente}! Muito obrigado!",
+
+    # --- Gratidão de verdade ---
+    "Você não tem noção do quanto isso ajuda, {nome}! {quantidade}{presente}! Obrigado!",
+    "É por gente como você que a live existe, {nome}! Valeu pelo {quantidade}{presente}!",
+    "{nome}, você tornou meu dia mais feliz! {quantidade}{presente}! Muito obrigado!",
+    "De coração, {nome}! {quantidade}{presente} é muito carinho! Gratidão!",
+    "Isso me motiva demais, {nome}! {quantidade}{presente}! Obrigado, de verdade!",
+    "{nome}, a família agradece de pé! {quantidade}{presente}! Valeu demais!",
+    "Fico emocionado, {nome}! {quantidade}{presente}! Muito, muito obrigado!",
+    "Que apoio incrível, {nome}! {quantidade}{presente}! Gratidão, família!",
+
+    # --- Zoeira ---
+    "O bolso do {nome} tá de parabéns! {quantidade}{presente}! Valeu!",
+    "Quem é que tá bonzinho hoje? É o {nome}! {quantidade}{presente}! Obrigado!",
+    "Gastou, {nome}? Gastou bem! {quantidade}{presente}! Valeu demais!",
+    "Olha o {nome} esbanjando! {quantidade}{presente} na área! Obrigadão!",
+    "O {nome} acordou generoso! {quantidade}{presente}! Valeu, família!",
+    "Dá-lhe, {nome}! {quantidade}{presente} e a live nem tá acabando! Valeu!",
+    "Se o {nome} manda mais um, eu choro! {quantidade}{presente}! Obrigado!",
+    "{nome}, assim a live vira festa! {quantidade}{presente}! Valeu demais!",
+    "Mandou bem, mandou muito bem! {nome} e {quantidade}{presente}! Obrigado!",
+    "Esse {nome} só dá alegria! {quantidade}{presente}! Valeu, valeu!",
+
+    # --- Com a pegada da tela e do pixel ---
+    "A tela ganhou mais cor! {nome} mandou {quantidade}{presente}! Obrigado!",
+    "Mais um pincel pra obra! {nome} mandou {quantidade}{presente}! Valeu!",
+    "Cada presente colore a tela! {nome} mandou {quantidade}{presente}! Gratidão!",
+    "Pixel por pixel, {nome} faz a arte! {quantidade}{presente}! Muito obrigado!",
+    "A obra de hoje tem a sua marca, {nome}! {quantidade}{presente}! Valeu!",
+    "Vai ficar lindo! {nome} mandou {quantidade}{presente}! Obrigado, família!",
+    "Tinta nova na paleta! {nome} mandou {quantidade}{presente}! Valeu demais!",
+    "A tela agradece, {nome}! {quantidade}{presente}! Muito obrigado!",
+
+    # --- Curtinhas empolgadas ---
+    "É nóis, {nome}! {quantidade}{presente}! Valeu!",
+    "Aeeee, {nome}! {quantidade}{presente}! Obrigadão!",
+    "Boaaa, {nome}! {quantidade}{presente}! Valeu, família!",
+    "Mandou bem, {nome}! {quantidade}{presente}! Gratidão!",
+    "Arrasou, {nome}! {quantidade}{presente}! Muito obrigado!",
+    "Chegou {quantidade}{presente}! Valeu, {nome}!",
+    "Presentão do {nome}! {quantidade}{presente}! Obrigado!",
+    "Isso aí, {nome}! {quantidade}{presente}! Valeu demais!",
 ]
 
 # --------------------------------------------------------------------------
@@ -213,4 +267,56 @@ BOAS_VINDAS = [
     "Boa, {nome}! Bem-vindo, família!",
     "Chegou, {nome}! Bem-vindo!",
     "{nome} na live! Bem-vindo!",
+
+    # --- Chegada triunfal ---
+    "Senhoras e senhores, ele chegou! Bem-vindo, {nome}!",
+    "Quem acabou de entrar? O {nome}! A live tá completa agora! Bem-vindo!",
+    "Estava faltando você, {nome}! Bem-vindo, agora a festa começou!",
+    "Soltem os fogos! {nome} chegou! Seja bem-vindo!",
+    "O {nome} entrou e a live subiu de nível! Bem-vindo!",
+    "Bateu o sino! {nome} chegou! Seja bem-vindo, família!",
+    "A estrela da noite chegou! Bem-vindo, {nome}!",
+    "Que honra! {nome} na live! Seja muito bem-vindo!",
+    "Chegou a visita mais esperada! Bem-vindo, {nome}!",
+    "Ouvi barulho de gente boa chegando! Bem-vindo, {nome}!",
+
+    # --- Sentindo-se em casa ---
+    "{nome}, pode entrar! A casa é sua! Bem-vindo!",
+    "Bem-vindo, {nome}! Já pode pegar um café e ficar com a gente!",
+    "Fica à vontade, {nome}! Aqui ninguém tem pressa! Bem-vindo!",
+    "{nome}, puxa uma cadeira! A família tá reunida! Bem-vindo!",
+    "Bem-vindo, {nome}! Aqui você nunca fica sozinho!",
+    "Chega mais, {nome}! Tem lugar pra todo mundo! Seja bem-vindo!",
+    "Bem-vindo, {nome}! Hoje a tela tá cheia de energia boa!",
+    "Entra, {nome}! Tá todo mundo animado te esperando! Bem-vindo!",
+
+    # --- Convite pra interagir ---
+    "Bem-vindo, {nome}! Chama no comentário e diz de onde você tá falando!",
+    "{nome}, seja bem-vindo! Conta pra gente de onde você veio!",
+    "Bem-vindo, {nome}! Manda um oi no chat que a família responde!",
+    "{nome}, bem-vindo! Escolhe a cor e deixa a sua marca na obra!",
+    "Oi, {nome}! Bem-vindo! Já escolheu a cor do seu primeiro pixel?",
+    "Seja bem-vindo, {nome}! Hoje o seu pixel pode virar destaque da tela!",
+    "Bem-vindo, {nome}! Quanto mais gente pinta, mais bonita a tela fica!",
+    "{nome}, bem-vindo! Aqui o seu toque faz diferença na arte!",
+
+    # --- Zoeira ---
+    "Chegou o {nome}! Esconde a tinta que o artista veio!",
+    "O {nome} entrou! Atenção, a tela vai ficar chique!",
+    "Alerta de gente querida! {nome} na live! Bem-vindo!",
+    "O {nome} chegou sem avisar! Bem-vindo, pode ficar!",
+    "Pode abrir o portão! O {nome} chegou! Bem-vindo!",
+    "O {nome} apareceu e o chat já melhorou! Bem-vindo!",
+    "Quem pediu mais um craque na live? Bem-vindo, {nome}!",
+    "Olha o {nome} chegando de mansinho! Bem-vindo, família!",
+
+    # --- Curtinhas empolgadas ---
+    "Aeee, {nome}! Bem-vindo!",
+    "É nóis, {nome}! Bem-vindo à live!",
+    "Chegou, chegou, chegou! Bem-vindo, {nome}!",
+    "Boaaa, {nome}! Seja bem-vindo!",
+    "Show, {nome}! Bem-vindo, família!",
+    "Mais um craque na área! Bem-vindo, {nome}!",
+    "Valeu por chegar, {nome}! Bem-vindo!",
+    "{nome}! Bem-vindo, bora pintar!",
 ]
