@@ -2,10 +2,10 @@
  * A tela que vai ao ar.
  *
  * Regra que governa o arquivo inteiro: TUDO e escrito em medidas nominais de
- * projeto (o cabecalho tem 140px, o titulo 54px, o rodape 560px) e nenhuma
- * delas vem da janela. Quem negocia com a janela sao so duas variaveis, as
- * duas escritas por `app.js` a cada `resize`: `--escala` encolhe ou estica o
- * palco inteiro de uma vez, e `--largura-projeto` diz quanto de ARENA cabe.
+ * projeto (a faixa de instrucoes 34px, o rodape 560px) e nenhuma delas vem da
+ * janela. Quem negocia com a janela sao so duas variaveis, as duas escritas
+ * por `app.js` a cada `resize`: `--escala` encolhe ou estica o palco inteiro
+ * de uma vez, e `--largura-projeto` diz quanto de ARENA cabe.
  * Fora dessas duas, um `@media` aqui seria um bug esperando para aparecer: no
  * dia em que a janela nao for 1080x1920, a composicao sairia diferente da que
  * foi aprovada.
@@ -70,9 +70,9 @@ html, body {
    por `transform` (barato, nao reflowa) para preencher a janela inteira.
 
    A altura e fixa e a largura e variavel, e nao o contrario, porque tudo que
-   esta dentro e uma fracao da ALTURA: o cabecalho tem 140px, o rodape 560px, e
-   a arena e o resto. Com a altura fixa a composicao vertical sai identica em
-   qualquer janela. O que sobra de largura vira arena, e a grade se centra nela.
+   esta dentro e uma medida da ALTURA: o rodape tem 560px, e a arena e o resto.
+   Com a altura fixa a composicao vertical sai identica em qualquer janela. O
+   que sobra de largura vira arena, e a grade se centra nela.
 
    `--largura-projeto` e `--escala` saem os dois de `escalaParaCaber`, e a
    escolha deles e o que faz a pagina cobrir a janela SEM faixa preta e SEM
@@ -99,8 +99,13 @@ html, body {
   display: grid;
   /* A arena e `1fr`, nao um numero fixo: o rodape cresce e encolhe conforme o
      banner de evento aparece, e a arena absorve a diferenca. Com um valor
-     fixo aqui, a rodape com banner empurrava o ranking para fora da tela. */
-  grid-template-rows: 140px 1fr 560px;
+     fixo aqui, a rodape com banner empurrava o ranking para fora da tela.
+
+     E o cabecalho e `auto`, nao 140px: ele agora carrega as instrucoes, e a
+     altura delas vem da config (`tela.fonte_instrucoes`). Com uma linha de
+     altura fixa, uma fonte grande cortava o texto contra o `overflow: hidden`
+     do palco — e a fonte e escolha do streamer. */
+  grid-template-rows: auto 1fr 560px;
   background:
     radial-gradient(1200px 900px at 50% 22%, rgba(30, 70, 130, 0.28), transparent 70%),
     radial-gradient(900px 700px at 80% 90%, rgba(255, 63, 142, 0.10), transparent 70%),
@@ -128,117 +133,52 @@ html, body {
 /* ------------------------------------------------------------------ */
 
 #topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
+  display: grid;
+  gap: 10px;
+  padding: 16px 34px;
   border-bottom: 1px solid var(--borda);
   background: linear-gradient(180deg, rgba(12, 20, 36, 0.9), rgba(5, 6, 10, 0));
 }
 
-/* O nome e a escala, na mesma linha e na mesma base.
-   O `baseline` e o que faz a nota de escala sentar no PE do nome em vez de
-   flutuar ao lado dele — alinhados por centro, os dois parecem dois textos
-   vizinhos; pela base, parecem um so campo impresso. */
-#marca-linha {
+/* As instrucoes.
+   Esta faixa era o pe do rodape e virou a primeira coisa da tela: e a unica
+   explicacao do jogo, e o que estava no lugar dela era o nome — que numa live
+   nao informa nada. O `wrap` e o que faz a faixa sobreviver a uma fonte
+   grande: em vez de vazar do cabecalho, o texto desce para a linha de baixo e
+   o cabecalho cresce (a linha dele e `auto`). */
+#instrucoes {
   display: flex;
-  align-items: baseline;
-  gap: 20px;
-}
-
-#marca h1 {
-  /* Sem espacamento entre letras. Os 6px de antes davam aquele ar de letreiro
-     de LED, que e o que qualquer tela de jogo faz — e o que fazia o nome
-     parecer um cartaz em vez de uma chapa gravada. Uma grotesca tecnica
-     pede letras ENCOSTADAS. */
-  font-size: 52px;
-  letter-spacing: 0;
-  font-weight: 700;
-  line-height: 1;
-  /* Sem halo.
-     Havia um borrao ciano atras do nome — o brilho de letreiro, que e o
-     enfeite mais gasto de tela de jogo, e que ainda por cima lava a borda da
-     letra e deixa o nome inteiro meio mole. O neon desta tela nao vem daqui:
-     vem do ciano da grade, do ambar da regua e das cores da comunidade. Numa
-     chapa de titulo o nome e GRAVADO, e gravado quer dizer borda limpa. */
-  color: #fff;
-}
-
-/* A nota de escala: a grade mede 50 por 51. E informacao de verdade — o
-   visitante ve de quantos pixels o quadro e feito — e e o que amarra o
-   cabecalho a regua, porque sai na MESMA tinta com que os rotulos da grade
-   sao impressos. O fio a esquerda e a division de uma chapa de titulo. */
-#registro {
-  padding-left: 20px;
-  border-left: 1px solid var(--regua-fraca);
-  font-family: var(--mono);
-  font-size: 19px;
-  color: var(--regua);
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-#registro small {
-  color: var(--texto-fraco);
-  font-size: 14px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-#subtitulo {
-  margin-top: 8px;
-  font-size: 19px;
-  color: var(--texto-fraco);
-  letter-spacing: 0.5px;
-}
-
-/* A placa de estado.
-   Era uma pilula de 999px com uma bolinha redonda acesa — o enfeite padrao de
-   "ao vivo", que nao diz nada sobre ESTE produto. Virou uma placa de quina
-   viva com o sinal QUADRADO: e a mesma linguagem da regua, e um quadrado
-   aceso le como indicador de painel, que e o que ele e. */
-#conexao {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  padding: 14px 22px;
-  border: 1px solid var(--borda);
-  border-left: 3px solid #3aff9e;
+  justify-content: center;
+  gap: 6px 22px;
+  padding: 10px 22px;
   border-radius: var(--raio);
-  background: var(--painel);
+  border: 1px dashed rgba(90, 150, 220, 0.28);
+  /* O tamanho vem do `config.json` (`tela.fonte_instrucoes`), escrito pelo
+     `app.js` quando o `hello` chega. Era fixo em 22px, e esta faixa e a
+     unica explicacao do jogo na tela. */
+  font-size: var(--fonte-instrucoes, 22px);
+  line-height: 1.3;
+  color: var(--texto-fraco);
 }
 
-#conexao.fora { border-left-color: var(--amarelo); }
-
-#conexao .luz {
-  width: 13px;
-  height: 13px;
-  border-radius: 2px;
-  background: #3aff9e;
-  box-shadow: 0 0 14px #3aff9e;
-  animation: pulsar 2.4s ease-in-out infinite;
+#instrucoes b {
+  color: var(--texto);
+  font-family: var(--mono);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 3px 10px;
+  border-radius: var(--raio-interno);
 }
 
-#conexao.fora .luz {
-  background: var(--amarelo);
-  box-shadow: 0 0 14px var(--amarelo);
-}
-
-#conexao strong { display: block; font-size: 17px; letter-spacing: 2px; }
-#conexao small { color: var(--texto-fraco); font-size: 13px; }
-
-@keyframes pulsar {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
+#instrucoes .seta { color: var(--ciano); }
 
 /* Quem pediu menos movimento no sistema, recebe menos movimento.
-   Nada aqui PIORA sem animacao: a luz continua acesa, so para de piscar; o
-   aviso continua entrando, so nao desliza. O que NAO se desliga e a animacao
-   do canvas — ela nao e enfeite, e o retorno que a pessoa recebe ao pintar.
-   Um pixel que aparece sem faisca nenhuma parece que nao funcionou. */
+   Nada aqui PIORA sem animacao: o aviso continua entrando, so nao desliza. O
+   que NAO se desliga e a animacao do canvas — ela nao e enfeite, e o retorno
+   que a pessoa recebe ao pintar. Um pixel que aparece sem faisca nenhuma
+   parece que nao funcionou. */
 @media (prefers-reduced-motion: reduce) {
-  #conexao .luz,
   #evento.aceso {
     animation: none;
   }
@@ -310,11 +250,18 @@ html, body {
 
 #rodape {
   display: grid;
+  /* A BASE TIPOGRAFICA DO RODAPE, escrita pelo `app.js` a partir de
+     `tela.fonte_rodape` (px de projeto). Todo texto daqui para baixo e um
+     MULTIPLO dela — titulo das listas, linhas do ranking e do feed, painel de
+     progresso e banner de evento — e as medidas que seguram esse texto (altura
+     da linha, coluna do numero) tambem. E por isso que um numero so no
+     config.json aumenta o rodape inteiro sem nada estourar. */
+  font-size: var(--fonte-rodape, 20px);
   /* `auto` no banner para ele sumir por completo fora de evento, e `1fr` na
      fileira do ranking/feed para ela ficar com toda a sobra. Era aqui que o
      ranking sumia: com o banner ocupando 92px mesmo vazio, sobravam ~46px
      para a lista e o `overflow: hidden` cortava as cinco linhas. */
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr;
   gap: 14px;
   padding: 16px 34px 20px;
   border-top: 1px solid var(--borda);
@@ -330,7 +277,7 @@ html, body {
   align-items: center;
   gap: 18px;
   padding: 0 26px;
-  height: 92px;
+  height: calc(var(--fonte-rodape, 20px) * 4.6);
   overflow: hidden;
   position: relative;
   transition: border-color 0.25s, background 0.25s;
@@ -355,11 +302,15 @@ html, body {
   50% { box-shadow: 0 0 60px rgba(255, 217, 61, 0.34) inset; }
 }
 
-.evento-emoji { font-size: 40px; }
-.evento-nome { font-size: 34px; font-weight: 800; letter-spacing: 3px; }
+.evento-emoji { font-size: calc(var(--fonte-rodape, 20px) * 2); }
+.evento-nome {
+  font-size: calc(var(--fonte-rodape, 20px) * 1.7);
+  font-weight: 800;
+  letter-spacing: 3px;
+}
 .evento-bonus {
   margin-left: auto;
-  font-size: 22px;
+  font-size: calc(var(--fonte-rodape, 20px) * 1.1);
   font-weight: 700;
   color: var(--amarelo);
   letter-spacing: 2px;
@@ -367,9 +318,9 @@ html, body {
 
 #evento-tempo {
   font-family: var(--mono);
-  font-size: 30px;
+  font-size: calc(var(--fonte-rodape, 20px) * 1.5);
   font-weight: 700;
-  min-width: 84px;
+  min-width: calc(var(--fonte-rodape, 20px) * 4.2);
   text-align: right;
 }
 
@@ -398,14 +349,14 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 16px;
+  font-size: calc(var(--fonte-rodape, 20px) * 0.8);
   letter-spacing: 3px;
   color: var(--texto-fraco);
 }
 
 #progresso-texto {
   font-family: var(--mono);
-  font-size: 26px;
+  font-size: calc(var(--fonte-rodape, 20px) * 1.3);
   color: var(--ciano);
 }
 
@@ -447,14 +398,14 @@ html, body {
 .progresso-numeros {
   display: flex;
   gap: 34px;
-  font-size: 18px;
+  font-size: calc(var(--fonte-rodape, 20px) * 0.9);
   color: var(--texto-fraco);
 }
 
 .progresso-numeros b {
   color: var(--texto);
   font-family: var(--mono);
-  font-size: 21px;
+  font-size: calc(var(--fonte-rodape, 20px) * 1.05);
 }
 
 /* Ranking e feed ----------------------------------------------------- */
@@ -483,7 +434,7 @@ html, body {
    separar duas coisas que ja estao separadas pelo espaco. */
 #ranking h2, #feed h2 {
   position: relative;
-  font-size: 17px;
+  font-size: calc(var(--fonte-rodape, 20px) * 0.85);
   letter-spacing: 2.5px;
   color: var(--texto);
   font-weight: 700;
@@ -511,7 +462,7 @@ html, body {
 
 .vazio {
   color: var(--texto-fraco);
-  font-size: 17px;
+  font-size: calc(var(--fonte-rodape, 20px) * 0.85);
   font-style: italic;
   padding: 8px 0;
 }
@@ -520,11 +471,19 @@ html, body {
 
 .rank {
   display: grid;
-  grid-template-columns: 32px 18px 1fr 46px 60px;
+  /* As colunas que seguram TEXTO crescem junto com a fonte: com a largura
+     fixa de antes, "N10" e um numero de cinco digitos vazavam da celula assim
+     que o rodape aumentasse. */
+  grid-template-columns:
+    calc(var(--fonte-rodape, 20px) * 1.6)
+    calc(var(--fonte-rodape, 20px) * 0.9)
+    1fr
+    calc(var(--fonte-rodape, 20px) * 2.3)
+    calc(var(--fonte-rodape, 20px) * 3);
   align-items: center;
   gap: 12px;
-  height: 34px;
-  font-size: 20px;
+  height: calc(var(--fonte-rodape, 20px) * 1.7);
+  font-size: calc(var(--fonte-rodape, 20px) * 1);
 }
 
 .rank-pos {
@@ -539,8 +498,8 @@ html, body {
 .rank:nth-child(3) .rank-pos { color: #e0965a; }
 
 .rank-cor {
-  width: 18px;
-  height: 18px;
+  width: calc(var(--fonte-rodape, 20px) * 0.9);
+  height: calc(var(--fonte-rodape, 20px) * 0.9);
   border-radius: var(--raio-interno);
   background: var(--cor, #8ea2c8);
   box-shadow: 0 0 12px var(--cor, #8ea2c8);
@@ -554,7 +513,7 @@ html, body {
 }
 
 .rank-nivel {
-  font-size: 14px;
+  font-size: calc(var(--fonte-rodape, 20px) * 0.7);
   font-weight: 800;
   text-align: center;
   padding: 3px 0;
@@ -574,11 +533,14 @@ html, body {
 
 .feed {
   display: grid;
-  grid-template-columns: 18px 84px 1fr;
+  grid-template-columns:
+    calc(var(--fonte-rodape, 20px) * 0.9)
+    calc(var(--fonte-rodape, 20px) * 4.2)
+    1fr;
   align-items: center;
   gap: 12px;
-  height: 34px;
-  font-size: 20px;
+  height: calc(var(--fonte-rodape, 20px) * 1.7);
+  font-size: calc(var(--fonte-rodape, 20px) * 1);
 }
 
 .feed.novo { animation: entrarFeed 0.35s ease-out; }
@@ -589,8 +551,8 @@ html, body {
 }
 
 .feed-cor {
-  width: 18px;
-  height: 18px;
+  width: calc(var(--fonte-rodape, 20px) * 0.9);
+  height: calc(var(--fonte-rodape, 20px) * 0.9);
   border-radius: var(--raio-interno);
   background: var(--cor, #8ea2c8);
   box-shadow: 0 0 12px var(--cor, #8ea2c8);
@@ -614,26 +576,3 @@ html, body {
   white-space: nowrap;
   color: var(--texto);
 }
-
-/* Instrucoes --------------------------------------------------------- */
-
-#instrucoes {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  border-radius: var(--raio);
-  border: 1px dashed rgba(90, 150, 220, 0.28);
-  font-size: 22px;
-  color: var(--texto-fraco);
-}
-
-#instrucoes b {
-  color: var(--texto);
-  font-family: var(--mono);
-  background: rgba(255, 255, 255, 0.07);
-  padding: 3px 10px;
-  border-radius: var(--raio-interno);
-}
-
-#instrucoes .seta { color: var(--ciano); }

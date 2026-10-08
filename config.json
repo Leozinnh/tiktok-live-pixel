@@ -1,7 +1,6 @@
 {
   "app": {
     "titulo": "PIXEL WORLD",
-    "subtitulo": "VOCÊ CONTROLA A ARTE",
     "log_dir": "logs",
     "db_path": "pixelworld.db",
     "feed_size": 6,
@@ -15,8 +14,8 @@
   },
 
   "canvas": {
-    "cols": 50,
-    "rows": 51,
+    "cols": 25,
+    "rows": 26,
 
     "paleta": {
       "vermelho": "#FF3B5C",
@@ -39,8 +38,15 @@
     }
   },
 
+  "tela": {
+    "fonte_regua_min": 12,
+    "fonte_regua_max": 26,
+    "fonte_instrucoes": 30,
+    "fonte_rodape": 28
+  },
+
   "tiktok": {
-    "username": "@SEU_USUARIO",
+    "username": "@meninodolancer",
     "reconnect_seconds": 5,
     "reconnect_max_seconds": 60,
     "fetch_gift_info": true,

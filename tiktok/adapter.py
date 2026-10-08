@@ -39,6 +39,11 @@ DORMIR_BLOQUEADO = 60.0
 # teste, a suite inteira — rode numa maquina onde ela nem esta instalada.
 try:  # pragma: no cover - depende do ambiente
     from TikTokLive import TikTokLiveClient
+    from TikTokLive.client.errors import (
+        UserNotFoundError,
+        UserOfflineError,
+        WebcastBlockedError,
+    )
     from TikTokLive.events import (
         CommentEvent,
         ConnectEvent,
@@ -48,16 +53,17 @@ try:  # pragma: no cover - depende do ambiente
         LikeEvent,
         ShareEvent,
     )
-    from TikTokLive.events.exceptions import UserNotFoundError, UserOfflineError
-
-    try:
-        from TikTokLive.events.exceptions import WebcastBlockedError
-    except ImportError:  # a excecao mudou de nome entre versoes
-        WebcastBlockedError = None  # type: ignore[assignment,misc]
 
     TIKTOKLIVE_DISPONIVEL = True
-except ImportError:  # pragma: no cover - depende do ambiente
+    TIKTOKLIVE_ERRO = ""
+except ImportError as erro:  # pragma: no cover - depende do ambiente
+    # O motivo fica guardado. "Nao instalada" e apenas UMA das causas
+    # possiveis: um submodulo que mudou de lugar entre versoes derruba o bloco
+    # inteiro e produziria a mesma mensagem para uma biblioteca instalada e
+    # funcional — foi o que aconteceu quando as excecoes sairam de
+    # `TikTokLive.events.exceptions` para `TikTokLive.client.errors`.
     TIKTOKLIVE_DISPONIVEL = False
+    TIKTOKLIVE_ERRO = str(erro)
     TikTokLiveClient = None  # type: ignore[assignment,misc]
 
     class UserNotFoundError(Exception):  # type: ignore[no-redef]
@@ -228,11 +234,16 @@ class TikTokLiveAdapter:
         if not TIKTOKLIVE_DISPONIVEL:
             self._status = AdapterStatus(
                 connected=False,
-                detail="biblioteca TikTokLive nao instalada",
+                detail=f"biblioteca TikTokLive indisponivel: {TIKTOKLIVE_ERRO}",
             )
+            # Sem o motivo real, a mensagem manda reinstalar uma biblioteca que
+            # ja esta instalada e o `pip install` nunca resolve nada.
             logger.error(
-                "TikTokLive nao esta instalado. Rode `pip install -r requirements.txt` "
-                "ou use o modo teste."
+                "TikTokLive indisponivel (%s). `pip install -r requirements.txt` "
+                "so resolve se ela estiver mesmo ausente; se `pip show TikTokLive` "
+                "mostrar a versao instalada, o import no topo de tiktok/adapter.py "
+                "e que esta desatualizado. Ou use o modo teste.",
+                TIKTOKLIVE_ERRO,
             )
             return
 

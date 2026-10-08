@@ -86,10 +86,14 @@ class ResultadoPintura:
 
 
 def motivo_legivel(motivo: str) -> str:
-    """Texto para o HUD. O motivo cru fica no log; isto vai para a tela."""
+    """Texto para o HUD. O motivo cru fica no log; isto vai para a tela.
+
+    O SALDO nao esta aqui de proposito: aquele aviso e montado pelo pipeline
+    (`_aviso_de_parada`), porque e o unico que chama a pessoa pelo nome e cita
+    as curtidas — dois dados que nao existem deste lado.
+    """
     return {
         MOTIVO_OK: "",
-        MOTIVO_SALDO: "SEM PIXELS — MANDE UMA ROSA 🌹",
         MOTIVO_COORDENADA: "COORDENADA FORA DO MAPA",
         MOTIVO_RATE: "CALMA! ESPERE 2 SEGUNDOS",
     }.get(motivo, "NAO DEU PARA PINTAR")

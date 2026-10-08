@@ -169,16 +169,28 @@ class Pipeline:
             self.ranking.registrar(handle, nome=evento.actor())
 
         if evento.type == EventType.GIFT:
+            nome = evento.gift_name or "desconhecido"
+            quantidade = int(evento.quantity or 1)
+
             # O upsert vem ANTES: `registrar_presente` incrementa uma coluna da
             # linha que ja precisa existir, e um UPDATE que nao casa nada
             # perderia o presente em silencio.
             await self.db.upsert_usuario(handle, display_name=evento.actor())
             await self.db.registrar_presente(
-                handle,
-                evento.gift_name or "desconhecido",
-                evento.gift_id,
-                int(evento.quantity or 1),
+                handle, nome, evento.gift_id, quantidade, pixels
+            )
+
+            # O console e o unico canal de quem esta transmitindo: a tela vive
+            # numa cena do OBS e o painel em outra janela, nenhum dos dois na
+            # frente de quem esta ao vivo. Sem esta linha, uma rosa chega,
+            # credita e nao aparece em lugar nenhum.
+            logger.info(
+                "Presente: %s mandou %dx %s -> %d pixel(s) (saldo %d)",
+                evento.actor(),
+                quantidade,
+                nome,
                 pixels,
+                self.inventario.saldo(handle),
             )
 
         unidade = "PIXEL" if pixels == 1 else "PIXELS"
@@ -308,7 +320,7 @@ class Pipeline:
             if not pintados:
                 # Nada entrou. "0 DE 10" so repetiria, com menos clareza, o que
                 # a propria recusa ja diz.
-                texto = motivo_legivel(motivo_parada or MOTIVO_SALDO)
+                texto = self._aviso_de_parada(motivo_parada or MOTIVO_SALDO, autor)
             elif motivo_parada is None:
                 # Entrou tudo que coube no teto: o resto nao foi recusado por
                 # regra nenhuma, foi adiado.
@@ -317,7 +329,10 @@ class Pipeline:
                     f"{pintados} DE {pedidas} PINTADOS"
                 )
             else:
-                texto = f"{motivo_legivel(motivo_parada)} ({pintados} DE {pedidas})"
+                texto = (
+                    f"{self._aviso_de_parada(motivo_parada, autor)} "
+                    f"({pintados} DE {pedidas})"
+                )
             mensagens.append(self._erro(texto))
 
         # O aviso das pecas ilegiveis nao fala de pintura de proposito: ele vale
@@ -359,6 +374,25 @@ class Pipeline:
     # ------------------------------------------------------------------
     # Auxiliares
     # ------------------------------------------------------------------
+
+    def _aviso_de_parada(self, motivo: str, autor: str) -> str:
+        """O texto do motivo que parou o pedido.
+
+        O SALDO e o unico que chama a pessoa pelo nome. O toast aparece no
+        telao para a live inteira, e "SEM PIXELS" sem nome parece recado de
+        ninguem: quem mandou o desenho fica sem saber que a resposta e para
+        ela — e o nome e o que transforma o aviso em resposta.
+
+        A segunda metade e o caminho GRATIS. A curtida tambem rende pixel
+        (`rewards.like.curtidas_por_pixel`), e quem nao manda presente precisa
+        ouvir isso do jogo, nao adivinhar.
+        """
+        if motivo != MOTIVO_SALDO:
+            return motivo_legivel(motivo)
+        return (
+            f"SEM PIXELS — {autor}, MANDE UMA ROSA 🌹"
+            f" OU CURTA {self._curtidas.por_pixel}x"
+        )
 
     def _cor_de(self, handle: str) -> Cor:
         """A cor (e o efeito) com que esta pessoa pinta agora."""

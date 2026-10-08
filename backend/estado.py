@@ -61,11 +61,23 @@ class EstadoJogo:
         app_cfg = cfg.get("app") or {}
         limites = cfg.get("limits") or {}
         tiktok_cfg = cfg.get("tiktok") or {}
+        tela_cfg = cfg.get("tela") or {}
 
         self.canvas = CanvasModel(
             int(canvas_cfg.get("cols") or 26), int(canvas_cfg.get("rows") or 51)
         )
         self.inventario = Inventario()
+
+        # Os tamanhos do texto da tela. O navegador nao le o config.json: quem
+        # conta a ele como desenhar e o `hello`, e o mesmo vale para a fonte da
+        # regua e do rodape — sem isto, ajustar o arquivo nao mudaria nada na
+        # tela, que e exatamente a queixa que originou estas chaves.
+        self.tela = {
+            "fonte_regua_min": int(tela_cfg.get("fonte_regua_min") or 9),
+            "fonte_regua_max": int(tela_cfg.get("fonte_regua_max") or 15),
+            "fonte_instrucoes": int(tela_cfg.get("fonte_instrucoes") or 22),
+            "fonte_rodape": int(tela_cfg.get("fonte_rodape") or 20),
+        }
 
         caminho = db_path or app_cfg.get("db_path") or "pixelworld.db"
         self.db = Database(caminho)
@@ -255,6 +267,10 @@ class EstadoJogo:
         return {
             "type": "hello",
             "canvas": self.canvas.para_dict(),
+            # Vai junto com o quadro: quem ensina a largura da grade ao
+            # navegador e este pacote, e e aqui que ele aprende o tamanho do
+            # texto. Separado do `canvas` porque nao e do quadro — e da TELA.
+            "tela": dict(self.tela),
             "stats": self.stats(),
             "ranking": self.ranking.top_para_dict(),
             "feed": list(self.feed),

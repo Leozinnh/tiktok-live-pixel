@@ -14,6 +14,7 @@ Duas regras que parecem detalhe e nao sao:
   rosa, escreve a coordenada, e nada acontece sem explicacao.
 """
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -145,6 +146,30 @@ async def test_presente_emite_aviso_na_tela(tmp_path):
     assert aviso is not None
     assert aviso["kind"] == "reward"
     assert "Joao" in aviso["text"]
+
+
+async def test_presente_aparece_no_console(tmp_path, caplog):
+    """O streamer descobre que o presente chegou pelo console.
+
+    O console e o unico canal de quem esta transmitindo: a tela vive numa cena
+    do OBS e o painel em outra janela, e nenhum dos dois esta na frente de quem
+    esta ao vivo. Sem esta linha o presente chega, credita, e nao aparece em
+    lugar nenhum — o sintoma e exatamente "enviei uma rosa e nao aconteceu
+    nada", que e a pior falha possivel deste projeto.
+    """
+    c = await montar(tmp_path)
+
+    with caplog.at_level(logging.INFO, logger="game.pipeline"):
+        await c.enviar(
+            EventType.GIFT, username="joao", display_name="Joao", gift_name="Rose"
+        )
+
+    await c.db.fechar()
+    registros = [r for r in caplog.records if r.levelno >= logging.INFO]
+    assert registros, "o presente nao deixou nenhuma linha no console"
+    texto = registros[-1].getMessage()
+    assert "Joao" in texto
+    assert "Rose" in texto
 
 
 async def test_presente_grande_vale_o_valor_do_presente(tmp_path):
@@ -724,6 +749,9 @@ async def test_lista_maior_que_o_saldo_pinta_o_que_cabe_e_avisa(tmp_path):
     assert len(pintados) == 2
     assert len(avisos) == 1
     assert "SEM PIXELS" in avisos[0]["text"]
+    # O aviso e do telao, mas a resposta e DELA: sem o nome, quem mandou o
+    # desenho nao sabe que a recusa e para ela.
+    assert "@joao" in avisos[0]["text"]
 
 
 async def test_peca_ilegivel_na_lista_nao_custa_o_desenho(tmp_path):

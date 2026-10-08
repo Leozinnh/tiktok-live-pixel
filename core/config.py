@@ -26,8 +26,10 @@ class ConfigError(Exception):
 
 PADROES: dict[str, Any] = {
     "app": {
+        # So o `<title>` da aba e a pagina de fallback usam o nome. A tela da
+        # live nao tem titulo: o que estava no lugar dele agora sao as
+        # instrucoes (ver `tela.fonte_instrucoes`).
         "titulo": "PIXEL WORLD",
-        "subtitulo": "VOCE CONTROLA A ARTE",
         "log_dir": "logs",
         "db_path": "pixelworld.db",
         "feed_size": 6,
@@ -56,6 +58,27 @@ PADROES: dict[str, Any] = {
             "branco": "#EEF2FF",
         },
         "especiais": {},
+    },
+    "tela": {
+        # Os tamanhos do texto da TELA, em pixels de projeto — o mesmo espaco
+        # do palco 1080x1920, que o `--escala` encolhe junto.
+        #
+        # O teto de 15px dos rotulos da regua era do tempo da grade de 50
+        # colunas. Numa grade de 25 a celula tem 40px e a conta sozinha pediria
+        # 34: o teto cortava a letra pela metade, e a tela ainda passa por um
+        # encode de video antes de chegar ao publico — traco fino nao sobrevive
+        # a ele. Quem transmite e quem sabe o tamanho que da para ler.
+        "fonte_regua_min": 9,
+        "fonte_regua_max": 15,
+        # A faixa de instrucoes ("mande uma rosa -> comente a coordenada") e a
+        # unica explicacao do jogo na tela; era fixa em 22px no CSS.
+        "fonte_instrucoes": 22,
+        # A base do texto do RODAPE, em px. Todo tamanho de la e um multiplo
+        # desta: titulo das listas, linhas do ranking e do feed, painel de
+        # progresso e banner de evento — junto com as medidas que seguram esse
+        # texto (altura da linha, coluna do numero). Um numero so aumenta o
+        # rodape inteiro sem nada vazar da caixa.
+        "fonte_rodape": 20,
     },
     "tiktok": {
         "username": PLACEHOLDER_USERNAME,
@@ -182,6 +205,18 @@ def carregar(caminho: str | Path, exigir_username: bool = True) -> dict:
 
     _exigir_inteiro(cfg, "canvas.cols", 1, MAX_COLUNAS)
     _exigir_inteiro(cfg, "canvas.rows", 1)
+
+    # O teto de 300 nao e gosto: o quadro tem 1080 de largura, e acima disso
+    # nao ha layout que caiba — a grade sairia sem celula nenhuma.
+    _exigir_inteiro(cfg, "tela.fonte_regua_min", 1, 300)
+    _exigir_inteiro(cfg, "tela.fonte_regua_max", 1, 300)
+    _exigir_inteiro(cfg, "tela.fonte_instrucoes", 1, 300)
+    _exigir_inteiro(cfg, "tela.fonte_rodape", 1, 300)
+    if cfg["tela"]["fonte_regua_max"] < cfg["tela"]["fonte_regua_min"]:
+        raise ConfigError(
+            "`tela.fonte_regua_max` precisa ser >= `tela.fonte_regua_min` "
+            f"(recebi {cfg['tela']['fonte_regua_max']} < {cfg['tela']['fonte_regua_min']})."
+        )
     _exigir_inteiro(cfg, "server.port", 1, 65535)
     _exigir_inteiro(cfg, "limits.queue_max_size", 1)
     _exigir_inteiro(cfg, "limits.max_pixels_por_evento", 0)

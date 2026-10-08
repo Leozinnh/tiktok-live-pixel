@@ -19,25 +19,17 @@
 <div id="palco">
 
   <header id="topo">
-    <div id="marca">
-      <div id="marca-linha">
-        <h1>PIXEL WORLD</h1>
-        <!-- A escala da chapa, como numa carta: quanto mede o quadro.
-             O numero e preenchido pelo `hud.js` com o tamanho que o SERVIDOR
-             mandou, e nao com o que esta escrito aqui — se a grade crescer um
-             dia, este texto acompanha sozinho. -->
-        <span id="registro"><small>grade</small> <b id="grade-medida">—</b></span>
-      </div>
-      <p id="subtitulo">a comunidade pinta um quadro por vez</p>
-    </div>
-
-    <div id="conexao">
-      <span class="luz"></span>
-      <div>
-        <strong id="conexao-texto">CONECTANDO</strong>
-        <small id="conexao-detalhe">abrindo o canal</small>
-      </div>
-    </div>
+    <!-- As instrucoes moram AQUI, e nao no rodape.
+         Elas sao a unica explicacao do jogo na tela, e o topo e a parte mais
+         lida do quadro. O que saiu do lugar delas foi o nome "PIXEL WORLD":
+         numa live o nome do jogo nao e informacao — como jogar, e. -->
+    <section id="instrucoes">
+      <span class="passo"><b>🌹</b> mande uma rosa</span>
+      <span class="seta">→</span>
+      <span class="passo"><b>H5</b> comente a coordenada</span>
+      <span class="seta">→</span>
+      <span class="passo"><b>🎨</b> seu pixel entra no quadro</span>
+    </section>
   </header>
 
   <main id="arena">
@@ -74,14 +66,6 @@
         <ul id="feed-lista"></ul>
       </section>
     </div>
-
-    <section id="instrucoes">
-      <span class="passo"><b>🌹</b> mande uma rosa</span>
-      <span class="seta">→</span>
-      <span class="passo"><b>H5</b> comente a coordenada</span>
-      <span class="seta">→</span>
-      <span class="passo"><b>🎨</b> seu pixel entra no quadro</span>
-    </section>
 
   </footer>
 

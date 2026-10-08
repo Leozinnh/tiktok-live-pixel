@@ -17,6 +17,7 @@ import {
   celulaParaPixel,
   ehMarco,
   escalaParaCaber,
+  faixasParaFonte,
   fonteDoRotulo,
   pixelParaCelula,
   rotuloDaColuna,
@@ -212,6 +213,45 @@ test("as marcas da regua caem de cinco em cinco", () => {
 test("a fonte do rotulo nunca fica ilegivel nem gigante", () => {
   assert.equal(fonteDoRotulo(4, 3), 9, "celula minuscula nao vira fonte de 1px");
   assert.equal(fonteDoRotulo(80, 1), 15, "celula enorme nao vira letreiro");
+});
+
+test("os limites da fonte vem da config, e sem ela nada muda", () => {
+  // O teto de 15 era do tempo da grade de 50 colunas. Numa grade de 25 a
+  // celula tem 40px e a conta sozinha pediria 34 — o teto cortava a letra
+  // pela metade, e depois do encode do TikTok ela virava um borrao. Com o
+  // teto vindo da config, quem transmite decide o tamanho que da para ler.
+  assert.equal(fonteDoRotulo(40, 1, { max: 26 }), 26, "o teto novo deixa a letra crescer");
+  assert.equal(
+    fonteDoRotulo(40, 1),
+    15,
+    "sem config, o padrao historico continua valendo"
+  );
+  assert.equal(
+    fonteDoRotulo(8, 1, { min: 12, max: 26 }),
+    12,
+    "o piso vence a celula apertada"
+  );
+  assert.equal(
+    fonteDoRotulo(40, 3, { min: 12, max: 26 }),
+    Math.floor((40 - 4) / (0.62 * 3)),
+    "o encaixe na largura ainda manda quando e menor que o teto"
+  );
+});
+
+test("a margem da regua cresce com a fonte, e nunca encolhe do que ja era", () => {
+  // O rotulo grande sem margem grande sairia desenhado por cima do quadro —
+  // a coordenada sairia justamente de fora do desenho, que e onde ela precisa
+  // estar. E a fonte pequena nao pode encolher a margem que ja existia: as
+  // faixas de hoje sao o minimo.
+  const grande = faixasParaFonte(26, 40);
+  assert.ok(grande.faixaLetras > 34, `faixa de cima ficou em ${grande.faixaLetras}`);
+  assert.ok(grande.faixaNumeros > 42, `faixa da esquerda ficou em ${grande.faixaNumeros}`);
+
+  assert.deepEqual(
+    faixasParaFonte(12, 20),
+    { faixaLetras: 34, faixaNumeros: 42 },
+    "fonte pequena mantem a margem de sempre"
+  );
 });
 
 test("pixel fora da grade devolve null em vez de uma celula inventada", () => {

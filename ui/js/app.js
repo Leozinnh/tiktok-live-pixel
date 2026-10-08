@@ -61,7 +61,7 @@ export function iniciar(doc = document, janela = window) {
     // Sao DUAS medidas, e as duas saem da mesma conta. `--escala` e a altura;
     // `--largura-projeto` e quanto de largura a janela pede naquele tamanho.
     // Juntas elas fazem o palco cobrir a janela exatamente, sem faixa preta
-    // nas laterais e sem cortar o titulo ou o rodape — que e o que "100% no
+    // nas laterais e sem cortar o cabecalho ou o rodape — que e o que "100% no
     // navegador" quer dizer. A largura sobra para a ARENA, entao a grade
     // cresce junto com a janela em vez de ficar boiando no meio.
     //
@@ -168,13 +168,27 @@ export function iniciar(doc = document, janela = window) {
         break;
 
       case "hello":
+        renderer.definirTela(pacote.tela || {});
+        // A faixa de instrucoes e DOM, nao canvas: o tamanho dela e uma
+        // variavel de CSS, em px de PROJETO — o palco encolhe tudo junto com o
+        // `--escala`, entao o numero da config vale em qualquer janela.
+        document.documentElement.style.setProperty(
+          "--fonte-instrucoes",
+          `${Number((pacote.tela || {}).fonte_instrucoes) || 22}px`
+        );
+        // A base do texto do RODAPE. Tudo la e um multiplo dela (ver o
+        // `#rodape` no style.css), entao este numero sozinho aumenta o rodape
+        // inteiro de uma vez.
+        document.documentElement.style.setProperty(
+          "--fonte-rodape",
+          `${Number((pacote.tela || {}).fonte_rodape) || 20}px`
+        );
         renderer.definirCanvas(
           pacote.canvas.cols,
           pacote.canvas.rows,
           pacote.canvas.cells
         );
         ajustar();
-        hud.grade(pacote.canvas.cols, pacote.canvas.rows);
         hud.estatisticas(pacote.stats);
         hud.ranking(pacote.ranking || []);
         estado.feed = (pacote.feed || []).slice(0, LIMITE_DO_FEED);
@@ -301,9 +315,11 @@ export function iniciar(doc = document, janela = window) {
 
   const conexao = new Conexao(urlDoWebSocket(janela.location), {
     aoMensagem,
+    // A TELA nao mostra mais o estado do canal — a placa "AO VIVO" saiu do
+    // cabecalho. Ele continua guardado no `estado`, que e o que o `iniciar()`
+    // devolve para inspecao.
     aoStatus: (s) => {
       estado.conectado = s.conectado;
-      hud.conexao({ conectado: s.conectado });
     },
   });
 

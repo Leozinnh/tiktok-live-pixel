@@ -237,6 +237,42 @@ test("com o palco em 1:1 nada muda: o caso do OBS", () => {
   assert.equal(renderer.dpr, 1);
 });
 
+test("o teto da fonte vem da config, e a margem da regua acompanha", () => {
+  // O caso real do streamer: OBS a 1080 de largura, grade de 25 colunas. A
+  // celula tem ~40px e a conta da fonte pediria 34 — com o teto de 15 do
+  // padrao a letra saia pequena demais, e depois do encode do video virava
+  // borrao. Com o teto vindo da config, a letra cresce E a margem da regua
+  // cresce junto: rotulo maior sem margem maior sairia por cima do quadro.
+  const anterior = globalThis.window;
+  globalThis.window = { devicePixelRatio: 1 };
+
+  try {
+    const { ctx } = contextoFalso();
+    const canvas = { width: 0, height: 0, style: {}, getContext: () => ctx };
+    const renderer = new Renderer(canvas);
+    renderer.definirCanvas(25, 26);
+    renderer.redimensionar(1080, 1220, 1);
+
+    assert.equal(renderer.fonteRegua, 15, "sem config, o teto de sempre");
+
+    renderer.definirTela({ fonte_regua_min: 12, fonte_regua_max: 26 });
+    renderer.redimensionar(1080, 1220, 1);
+
+    assert.equal(renderer.fonteRegua, 26, "o teto da config tem que valer");
+    assert.ok(
+      renderer.fonteRegua * 0.62 * 2 + 8 <= renderer.grade.faixaNumeros,
+      `um rotulo de dois digitos (${Math.round(renderer.fonteRegua * 0.62 * 2)}px) ` +
+        `nao cabe na margem de ${renderer.grade.faixaNumeros}px`
+    );
+    assert.ok(
+      renderer.grade.celula >= 30,
+      `a grade encolheu demais para caber a margem: celula de ${renderer.grade.celula}px`
+    );
+  } finally {
+    globalThis.window = anterior;
+  }
+});
+
 test("o fundo pinta o quadro INTEIRO, em qualquer dpr", () => {
   for (const dpr of DPRS) {
     const { canvas, comandos } = quadro(dpr);

@@ -18,6 +18,7 @@ import {
   bordasDaGrade,
   calcularGrade,
   ehMarco,
+  faixasParaFonte,
   fonteDoRotulo,
   rotuloDaColuna,
 } from "./geometry.js";
@@ -65,6 +66,24 @@ export class Renderer {
     // O efeito do evento em curso (`arco_iris`, `caos`, `desafio`), ou null.
     // Quem escreve aqui e o `app.js`, a partir do `event_start`.
     this.efeito = null;
+
+    // Os limites da fonte da regua, do `config.json` (`tela.*`). Chegam pelo
+    // `hello`; antes disso valem os padroes historicos.
+    this.tela = { min: 9, max: 15 };
+    this.fonteRegua = 15;
+  }
+
+  /**
+   * Os tamanhos que vem do `config.json`, no `hello`.
+   *
+   * As chaves chegam com o nome do ARQUIVO (`fonte_regua_min`), de proposito:
+   * e o formato que o servidor manda, e traduzir aqui so criaria um segundo
+   * nome para a mesma coisa. Quem chama isto precisa reajustar o palco depois
+   * (`ajustar()` no `app.js`): a fonte decide a margem da regua, e a margem
+   * decide o tamanho da grade.
+   */
+  definirTela({ fonte_regua_min: min = 9, fonte_regua_max: max = 15 } = {}) {
+    this.tela = { min: Number(min) || 9, max: Number(max) || 15 };
   }
 
   /**
@@ -107,13 +126,36 @@ export class Renderer {
     // encolhido o mesmo vale para a escala: a celula de 67 no espaco do palco
     // vale 26,8 na tela com escala 0,4, e a fronteira que nao cai em pixel
     // inteiro some quando a cor da grade ja e quase transparente.
-    this.grade = calcularGrade({
+    // A fonte depende da celula, e a MARGEM da regua depende da fonte: um
+    // rotulo maior precisa de mais margem, e mais margem encolhe a celula. As
+    // duas contas se olham, entao sao duas passadas. A segunda so roda quando
+    // a fonte pediu mais margem do que o padrao — com os limites de sempre ela
+    // nunca pede, e a grade sai exatamente como saia antes. Uma passada extra
+    // basta: a margem so cresce na segunda, entao a celula so encolhe, e o
+    // pedido seguinte seria menor — nunca maior.
+    const letras = rotuloDaColuna(this.cols - 1).length;
+    const medidas = {
       cols: this.cols,
       rows: this.rows,
       largura,
       altura,
       dpr: this.dpr,
-    });
+    };
+
+    let grade = calcularGrade(medidas);
+    let fonte = fonteDoRotulo(grade.celula, letras, this.tela);
+    const faixas = faixasParaFonte(fonte, grade.celula);
+
+    if (faixas.faixaLetras > grade.faixaLetras || faixas.faixaNumeros > grade.faixaNumeros) {
+      grade = calcularGrade({ ...medidas, ...faixas });
+      fonte = fonteDoRotulo(grade.celula, letras, this.tela);
+    }
+
+    this.grade = grade;
+    // Guardado, e nao recalculado na hora de desenhar: foi ESTE numero que
+    // dimensionou a margem logo acima. Recalcular la poderia divergir da
+    // margem que ja foi reservada no layout.
+    this.fonteRegua = fonte;
   }
 
   definirCanvas(cols, rows, cells = []) {
@@ -320,17 +362,19 @@ export class Renderer {
     const cursor = this.cursor;
     const fino = 1 / this.dpr;
 
-    // O rotulo mais largo da grade decide a fonte: com 50 colunas ele tem
-    // duas letras ("AX"), e uma fonte que servia para "H" os encosta um no
-    // outro. A conta passa pelas letras MAIS LARGAS, entao a regua inteira
-    // sai do mesmo tamanho — uma letra de 14 e outra de 12 na mesma fileira
-    // parece defeito.
-    const letras = rotuloDaColuna(cols - 1).length;
-    const tamanho = fonteDoRotulo(celula, letras);
+    // O tamanho saiu do `redimensionar`: foi ele que dimensionou a margem da
+    // regua para esta fonte caber. A conta passa pelas letras MAIS LARGAS da
+    // grade, entao a regua inteira sai do mesmo tamanho — uma letra de 14 e
+    // outra de 12 na mesma fileira parece defeito.
+    //
+    // Em NEGRITO de proposito: a tela passa por um encode de video antes de
+    // chegar ao publico, e um traco fino a 88% de opacidade nao sobrevive a
+    // ele. O peso e o que segura a letra depois da compressao.
+    //
     // A MESMA monoespacada do feed, e nao a `ui-monospace` generica: os dois
     // lugares imprimem a mesma coordenada, e o mesmo "H5" desenhado em duas
     // fontes diferentes parece dois enderecos diferentes.
-    ctx.font = `${tamanho}px "Cascadia Mono", Consolas, ui-monospace, monospace`;
+    ctx.font = `bold ${this.fonteRegua}px "Cascadia Mono", Consolas, ui-monospace, monospace`;
     ctx.textBaseline = "middle";
 
     // Quanto o rotulo se afasta da moldura. Preso ao comprimento do tracinho

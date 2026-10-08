@@ -121,15 +121,48 @@ export function analisarRotulo(texto, cols = null, rows = null) {
  * ter duas ("AA"), e a mesma fonte que servia para "H" faz "AA" encostar na
  * celula vizinha — justo na tela em que a audiencia precisa LER a coluna
  * para saber o que comentar. Quanto mais letras o rotulo tiver, menor ele
- * fica; `maximo` e `minimo` existem para a letra nao virar um letreiro numa
- * grade pequena nem um borrao ilegivel numa grade gigante.
+ * fica; `min` e `max` existem para a letra nao virar um letreiro numa grade
+ * pequena nem um borrao ilegivel numa grade gigante.
+ *
+ * Os dois limites vem da config (`tela.fonte_regua_min/max`), e nao de
+ * constantes: o teto de 15 era do tempo da grade de 50 colunas, e ele continuava
+ * cortando a letra numa grade de 25, onde a celula tem 40px e a conta sozinha
+ * pediria 34. A tela passa por um encode de video antes de chegar ao publico, e
+ * traco fino nao sobrevive a ele — quem transmite e quem sabe o tamanho que le.
  *
  * A largura de um caractere monoespacado e ~0,62 da fonte.
  */
-export function fonteDoRotulo(celula, letras = 1) {
+export function fonteDoRotulo(celula, letras = 1, { min = 9, max = 15 } = {}) {
   const porAltura = celula - 6;
   const porLargura = (celula - 4) / (0.62 * Math.max(1, letras));
-  return Math.max(9, Math.min(15, Math.floor(Math.min(porAltura, porLargura))));
+  return Math.max(min, Math.min(max, Math.floor(Math.min(porAltura, porLargura))));
+}
+
+/**
+ * A margem da regua que cabe uma fonte deste tamanho.
+ *
+ * A faixa precisa segurar DUAS coisas: o tracinho, que se estica junto com a
+ * celula (`comprido` no `renderer`), e o rotulo inteiro, com dois digitos na
+ * coluna da esquerda. Uma fonte maior sem margem maior desenha o rotulo por
+ * cima do quadro — a coordenada sairia justamente de onde ela precisa estar:
+ * fora do desenho.
+ *
+ * As faixas de hoje (34 e 42) continuam sendo o MINIMO: uma fonte pequena nao
+ * encolhe a margem que ja existia.
+ */
+export function faixasParaFonte(fonte, celula, { minimoLetras = 34, minimoNumeros = 42 } = {}) {
+  const recuo = Math.max(9, celula * 0.5) + 6;
+  // O rotulo e centrado no recuo (`textBaseline: middle`), e o que sobe a
+  // partir dele e meia altura de MAIUSCULA — 0,72 da fonte, e sem descida,
+  // porque rotulo so tem letra maiuscula e algarismo.
+  const altura = Math.ceil(recuo + fonte * 0.36 + 3);
+  // Dois digitos: "0" a "99". E o que a grade usa hoje, e um rotulo de tres
+  // digitos so aparece numa grade de 100 linhas, que nao cabe na tela.
+  const largura = Math.ceil(recuo + fonte * 0.62 * 2 + 3);
+  return {
+    faixaLetras: Math.max(minimoLetras, altura),
+    faixaNumeros: Math.max(minimoNumeros, largura),
+  };
 }
 
 /**
@@ -236,9 +269,9 @@ export function calcularGrade({
  *
  * O palco tem uma ALTURA de projeto fixa (1920) e uma largura que se ajusta.
  * A altura manda porque e ela que decide o tamanho de tudo que e desenhado: o
- * cabecalho, o rodape e a arena sao fracoes dela, entao a composicao vertical
- * sai identica em qualquer janela — o titulo sempre ocupa 7,3% da altura, a
- * arena sempre 63,5%. O que sobra de largura vira ARENA, e a grade se centra
+ * cabecalho, o rodape e a arena sao medidas dela, entao a composicao vertical
+ * sai identica em qualquer janela — o rodape sempre ocupa os mesmos 560px, e
+ * a arena todo o resto. O que sobra de largura vira ARENA, e a grade se centra
  * nela.
  *
  * A alternativa — encaixar o palco inteiro, mantendo 1080x1920 — deixava

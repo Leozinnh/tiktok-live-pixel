@@ -2,7 +2,7 @@
 
 **A sua LIVE pinta um quadro. Um pixel por vez, por pessoa.**
 
-Uma grade de 50 × 51 (A–Z, depois AA–AX, linhas 0–50) fica na tela do OBS.
+Uma grade de 25 × 26 (colunas A–Y, linhas 0–25) fica na tela do OBS.
 Alguém entra na LIVE, vê
 aquele monte de quadradinhos, pergunta *"que porra é essa?"* — e em quinze
 segundos está mandando uma rosa e comentando `H5` para escolher onde pintar.
@@ -38,45 +38,55 @@ decidindo junto o que aparece nele.**
 Uma cor é sorteada automaticamente para cada pessoa na primeira pintura, e ela
 fica. Quem quiser escolher escreve `/cor vermelho` ou `/color #FF0000`.
 
-### Um coração de verdade, para testar
+### Dois corações de verdade, para testar
 
-Cem rosas viram cem pixels. Dê a cor, mande as rosas, e cole isto:
+Cada pixel custa 1 de saldo (uma rosa). O quadro de hoje tem **25 × 26** — as
+colunas vão de A a Y e as linhas de 0 a 25 — e as duas receitas abaixo são para
+ele. Dê a cor (`/cor vermelho`), mande as rosas, e cole a lista; vírgula ou
+espaço separam igual.
 
-```
-/cor vermelho
-U20,V20,AB20,AC20,T21,U21,V21,W21,AA21,AB21,AC21,AD21,S22,T22,U22,V22,W22,X22,Y22,Z22,AA22,AB22,AC22,AD22,AE22
-S23,T23,U23,V23,W23,X23,Y23,Z23,AA23,AB23,AC23,AD23,AE23,T24,U24,V24,W24,X24,Y24,Z24,AA24,AB24,AC24,AD24,U25,V25,W25,X25,Y25,Z25,AA25,AB25,AC25
-V26,W26,X26,Y26,Z26,AA26,AB26,W27,X27,Y27,Z27,AA27,X28,Y28,Z28,Y29
-```
-
-São 74 células, e sobram 26 pixels.
-
-**No painel, é uma colada só.** O campo de texto aceita várias linhas, então
-`Ctrl+V` nas três linhas de coordenadas e *Simular* pinta o coração inteiro de
-uma vez — 74 pixels e **um** tique de cooldown. As três linhas são um
-comentário: o `\n` separa coordenada igual à vírgula.
-
-**Na LIVE de verdade, três comentários.** Não é o jogo que não aceita: um
-comentário do TikTok cabe em ~150 caracteres e a lista inteira tem 321. Cada
-linha acima cabe, e cada uma é uma jogada — dois segundos entre uma e outra. O
-`/cor vermelho` é um comentário à parte, e ele não pinta nada: só troca a cor.
-O desenho aparece assim:
+**Mini coração** — 11 pixels (colunas K..O, linhas 11..14):
 
 ```
-     ████     ████
-   ████████ ████████
-  ██████████████████
-  ██████████████████
-   ████████████████
-    ██████████████
-     ██████████
-       ██████
-         ██
+L11, N11, K12, L12, M12, N12, O12, L13, M13, N13, M14
 ```
 
-O cooldown de 2 segundos vale por **comentário**, não por pixel: cada bloco
-acima é uma jogada só. Colar os três de uma vez faz os dois últimos levarem
-`CALMA! ESPERE 2 SEGUNDOS` — sem custar nada, e é só repetir.
+```
+ █ █
+█████
+ ███
+  █
+```
+
+**Coração clássico** — 27 pixels (colunas J..P, linhas 10..15):
+
+```
+K10, L10, N10, O10, J11, K11, L11, M11, N11, O11, P11, J12, K12, L12, M12, N12, O12, P12, K13, L13, M13, N13, O13, L14, M14, N14, M15
+```
+
+```
+ ██ ██
+███████
+███████
+ █████
+  ███
+   █
+```
+
+**Tudo num comentário só.** As duas listas cabem: a do mini tem 53 caracteres e
+a do clássico, 133 — dentro dos ~150 de um comentário do TikTok. O cooldown de
+2 segundos vale por **comentário**, não por pixel: uma lista inteira é uma
+jogada só, e é por isso que o jeito certo de desenhar é colar a lista, e não
+pintar quadrado a quadrado (que levaria dois segundos por pixel).
+
+**No painel de controle é igual** — o campo de texto aceita a lista, e o botão
+*Simular* pinta tudo de uma vez. Trocar o espaço por vírgula, ou quebrar em
+várias linhas, dá no mesmo: o parser separa por vírgula, ponto-e-vírgula,
+espaço e `\n`.
+
+Quem manda a lista sem saldo para tudo recebe o aviso **com o nome**: `SEM
+PIXELS — @fulano, MANDE UMA ROSA 🌹 OU CURTA 20x` — a curtida é o caminho
+grátis, e o aviso diz de quem é a vez.
 
 ### As regras que fazem a coisa funcionar
 
@@ -161,13 +171,13 @@ encolhe o quadro sem motivo — o ajuste já é automático.
 > o palco ficava nos 1080 × 1920 nominais para sempre e a única forma de ver o
 > quadro todo numa tela menor era dar zoom out.
 
-**Numa janela vertical a grade fica bem maior.** A grade é 50 × 51, quase
-quadrada, e quem manda no tamanho da célula é a **altura**: cada linha é
-`altura_da_arena ÷ 51`. Numa janela vertical (9:16, ou qualquer coisa perto
-disso) a arena fica alta e a grade usa ~93% da largura disponível. Numa janela
-deitada a arena fica baixa e larga, e a grade para no limite da altura — ela
-continua inteira e centralizada, só sobra espaço nas laterais. Para a grade
-grande, compartilhe uma janela vertical.
+**Numa janela vertical a grade fica bem maior.** A grade é 25 × 26, quase
+quadrada, e o tamanho da célula é o que **couber**: o menor entre a largura
+dividida pelas colunas e a altura dividida pelas linhas, já descontadas as
+margens dos rótulos. Numa janela vertical (9:16, ou qualquer coisa perto disso)
+a arena sobra em altura e a grade usa a largura inteira; numa janela deitada é
+a altura que aperta, e a grade continua inteira e centralizada, com espaço
+sobrando nas laterais. Para a grade grande, compartilhe uma janela vertical.
 
 1. **Fontes → + → Navegador**
 2. URL: `http://localhost:8000/`
@@ -316,9 +326,12 @@ meio do código.
 Trocar para `100 × 100` é **só isso**. As células encolhem e o desenho continua
 cabendo na tela — o tamanho da célula é calculado, nunca fixo.
 
-Hoje são 50 colunas, e o motivo é o quadro: com 26 a grade virava uma tira
-estreita no meio de 1080px, com duas faixas mortas de ~200px de cada lado.
-Com 50 ela ocupa a largura inteira e ainda sobra altura.
+Hoje são 25 colunas, e o motivo é o TAMANHO do pixel: com 50 a célula ficava
+com ~20px de lado, e o rótulo da régua saía menor do que o encoder de vídeo do
+TikTok preserva — a letra da coordenada borrava justamente para quem precisa
+lê-la. Com 25 a célula fica com o dobro do lado e a grade continua ocupando a
+largura. É o equilíbrio: mais colunas é mais resolução para o desenho, menos
+legibilidade para a coordenada.
 
 Colunas vão de `A` até `ZZ` (702). A partir de `AA` a coordenada tem duas
 letras — e o rótulo na tela encolhe sozinho para as duas caberem na célula,

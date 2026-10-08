@@ -85,6 +85,38 @@ def test_linhas_invalidas_sao_recusadas_citando_a_chave(tmp_path, rows):
     assert "canvas.rows" in str(erro.value)
 
 
+@pytest.mark.parametrize(
+    "chave, valor",
+    [
+        ("fonte_regua_min", 0),
+        ("fonte_regua_max", -3),
+        ("fonte_regua_max", 1000),
+        ("fonte_instrucoes", "grande"),
+        ("fonte_rodape", 0),
+    ],
+)
+def test_tela_invalida_recusa_a_config(tmp_path, chave, valor):
+    """Fonte zero nao existe, e uma fonte maior que o quadro nao tem layout."""
+    caminho = escrever(tmp_path, {"tela": {chave: valor}})
+
+    with pytest.raises(ConfigError) as erro:
+        carregar(caminho, exigir_username=False)
+
+    assert f"tela.{chave}" in str(erro.value)
+
+
+def test_teto_da_fonte_abaixo_do_piso_recusa_a_config(tmp_path):
+    """Um teto abaixo do piso deixaria a conta da fonte sem resposta."""
+    caminho = escrever(
+        tmp_path, {"tela": {"fonte_regua_min": 20, "fonte_regua_max": 10}}
+    )
+
+    with pytest.raises(ConfigError) as erro:
+        carregar(caminho, exigir_username=False)
+
+    assert "fonte_regua_max" in str(erro.value)
+
+
 def test_702_colunas_e_o_maximo_aceito(tmp_path):
     """702 = colunas de A ate ZZ. Alem disso o rotulo deixa de ser legivel."""
     caminho = escrever(tmp_path, {"canvas": {"cols": 702}})
@@ -143,7 +175,13 @@ def test_config_real_do_projeto_e_valida():
     """A config que vai pro ar tem que ser valida. Pega erro de digitacao."""
     cfg = carregar("config.json", exigir_username=False)
 
-    assert cfg["canvas"]["cols"] == 50
-    assert cfg["canvas"]["rows"] == 51
+    # O TAMANHO da grade e escolha do streamer e muda com o quadro que ele
+    # quer (25x26 e o desenho grande de hoje, 50x51 foi o de ontem). O que
+    # este teste guarda e o que NAO pode mudar sem conserto em outro lugar: a
+    # coluna ainda caber num rotulo que a audiencia consegue escrever (702 =
+    # A..ZZ) e a paleta continuar tendo as cores que ela aprendeu.
+    assert 1 <= cfg["canvas"]["cols"] <= 702
+    assert cfg["canvas"]["rows"] >= 1
     assert cfg["rewards"]["sobrescrita_custo"] >= 1
     assert len(cfg["canvas"]["paleta"]) >= 8
+    assert cfg["tela"]["fonte_regua_max"] >= cfg["tela"]["fonte_regua_min"]

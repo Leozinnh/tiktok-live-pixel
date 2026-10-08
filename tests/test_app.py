@@ -251,6 +251,34 @@ def test_ws_hello_traz_as_estatisticas(tmp_path):
     assert mensagem["stats"]["filled"] == 0
 
 
+def test_ws_hello_traz_os_tamanhos_da_tela(tmp_path):
+    """O navegador nao le o config.json: quem conta o tamanho do texto e o hello.
+
+    Sem isto, ajustar a fonte no arquivo nao mudaria nada na tela — que e
+    exatamente a queixa que originou estas chaves.
+    """
+    cfg = cfg_teste()
+    cfg["tela"] = {
+        "fonte_regua_min": 12,
+        "fonte_regua_max": 26,
+        "fonte_instrucoes": 34,
+        "fonte_rodape": 24,
+    }
+    estado = EstadoJogo(cfg, db_path=tmp_path / "ws.db", modo_teste=True, seed=1)
+    app = criar_app(estado)
+
+    with TestClient(app) as cliente:
+        with cliente.websocket_connect("/ws") as ws:
+            mensagem = ws.receive_json()
+
+    assert mensagem["tela"] == {
+        "fonte_regua_min": 12,
+        "fonte_regua_max": 26,
+        "fonte_instrucoes": 34,
+        "fonte_rodape": 24,
+    }
+
+
 def test_ws_hello_conta_o_evento_em_curso(tmp_path):
     """Quem conecta NO MEIO de um evento precisa ver o banner.
 

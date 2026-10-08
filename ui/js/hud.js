@@ -47,21 +47,6 @@ export class Hud {
   // Estatisticas
   // ------------------------------------------------------------------
 
-  /**
-   * A escala do quadro, no cabecalho: "grade 50 x 51".
-   *
-   * Vem do servidor, e nao do `index.html`, pelo mesmo motivo que tudo o mais
-   * aqui: o tamanho da grade e do servidor. Escrito a mao no HTML, ele
-   * continuaria dizendo 50x51 no dia em que o mapa crescesse — e um numero
-   * errado impresso no cabecalho e pior do que numero nenhum, porque tem
-   * cara de conferido.
-   */
-  grade(cols, rows) {
-    if (!cols || !rows) return;
-    if (!this._soMudou("grade", [cols, rows])) return;
-    this.$("grade-medida").textContent = `${cols} × ${rows}`;
-  }
-
   estatisticas({ filled, total, users, colors }) {
     if (this._soMudou("stats", { filled, total, users, colors })) {
       this.$("stat-pixels").textContent = `${filled}/${total}`;
@@ -198,19 +183,5 @@ export class Hud {
     setTimeout(() => div.remove(), 5200);
 
     while (caixa.children.length > 4) caixa.lastElementChild.remove();
-  }
-
-  // ------------------------------------------------------------------
-  // Conexao
-  // ------------------------------------------------------------------
-
-  conexao({ conectado, detalhe }) {
-    const pilula = this.$("conexao");
-    pilula.classList.toggle("fora", !conectado);
-    this.$("conexao-texto").textContent = conectado ? "AO VIVO" : "RECONECTANDO";
-    // O detalhe e reescrito SEMPRE. Deixar o texto antigo quando ninguem
-    // passa um novo deixaria "abrindo o canal" na tela com a LIVE ja no ar.
-    this.$("conexao-detalhe").textContent =
-      detalhe || (conectado ? "recebendo pinturas" : "tentando de novo");
   }
 }

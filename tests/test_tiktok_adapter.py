@@ -351,3 +351,43 @@ def test_backoff_tem_jitter():
     valores = {adapter._espera(30.0, 1) for _ in range(40)}
 
     assert len(valores) > 1
+
+
+# --------------------------------------------------------------------------
+# Deteccao da biblioteca
+# --------------------------------------------------------------------------
+
+
+def test_biblioteca_presente_e_reconhecida_como_disponivel():
+    """`import TikTokLive` funcionando TEM que significar disponivel.
+
+    A deteccao envolvia o bloco inteiro num `except ImportError`, entao
+    qualquer submodulo que mudasse de lugar entre versoes derrubava junto: as
+    excecoes sairam de `TikTokLive.events.exceptions` e viraram
+    `TikTokLive.client.errors` na 7.x, e o adapter passou a anunciar
+    "biblioteca nao instalada" para uma biblioteca instalada e funcional. A
+    mensagem mentia sobre a causa — o `pip install` nunca teria efeito.
+    """
+    pytest.importorskip("TikTokLive")
+
+    import tiktok.adapter as adapter
+
+    assert adapter.TIKTOKLIVE_DISPONIVEL is True
+    assert adapter.TikTokLiveClient is not None
+
+
+def test_excecoes_reais_estao_ligadas_quando_a_biblioteca_existe():
+    """As excecoes tem que ser as DA BIBLIOTECA, nunca os placeholders.
+
+    Um placeholder no `except` nunca casa com o que a biblioteca levanta: o
+    `@` errado viraria reconexao eterna e o offline nunca dormiria — os dois
+    em silencio. As reais descendem de RuntimeError; os placeholders, de
+    Exception, entao a distincao e verificavel.
+    """
+    pytest.importorskip("TikTokLive")
+
+    import tiktok.adapter as adapter
+
+    assert issubclass(adapter.UserNotFoundError, RuntimeError)
+    assert issubclass(adapter.UserOfflineError, RuntimeError)
+    assert adapter.WebcastBlockedError is not None
