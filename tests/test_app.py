@@ -27,6 +27,7 @@ from starlette.testclient import TestClient
 
 from backend.app import criar_app
 from backend.estado import EstadoJogo
+from game.events import CATALOGO_PADRAO
 from tiktok.base import AdapterStatus
 
 COLS, ROWS = 26, 51
@@ -624,6 +625,28 @@ async def test_estado_traz_o_snapshot(tmp_path):
     assert dados["canvas"]["rows"] == ROWS
     assert dados["canvas"]["total"] == COLS * ROWS
     assert dados["canvas"]["filled"] == 0
+
+
+async def test_estado_traz_o_catalogo_inteiro_para_os_botoes_do_painel(tmp_path):
+    """O painel monta os botoes de forcar evento a partir DESTA lista.
+
+    Ela existia duas vezes (uma no painel), e as duas ficaram diferentes: os
+    eventos novos entraram no catalogo e nao no painel, e nao havia como
+    forcar nenhum deles. Agora o painel nao tem lista — este teste prende a
+    costura: o catalogo que o `forcar` consulta chega inteiro, com nome e
+    emoji, em toda leitura de estado.
+    """
+    c = await montar(tmp_path)
+
+    dados = (await c.get("/api/estado")).json()
+
+    await c.estado.fechar()
+    assert [e["key"] for e in dados["eventos"]] == [
+        e["key"] for e in CATALOGO_PADRAO
+    ]
+    for evento in dados["eventos"]:
+        assert evento["name"], f"o botao de {evento['key']} sairia sem nome"
+        assert evento["emoji"], f"o botao de {evento['key']} sairia sem emoji"
 
 
 async def test_estado_conta_usuarios_e_cores(tmp_path):

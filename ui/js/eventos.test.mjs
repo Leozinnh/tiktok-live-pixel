@@ -8,12 +8,17 @@
  *
  * Hoje sao dois tipos de efeito, e o teste separa os dois:
  *
- * - os ENFEITES (o glitch do CAOS, a mira do DESAFIO, os riscos do TURBO e a
- *   festa da HORA DO PIXEL) desenham por cima do quadro;
- * - os efeitos de CELULA (ARCO-IRIS e o feixe do BRILHO) trocam a cor das
+ * - os ENFEITES (do glitch do CAOS a pelicula do FILME ANTIGO) desenham por
+ *   cima do quadro;
+ * - os efeitos de CELULA (ARCO-IRIS, NEGATIVO e companhia) trocam a cor das
  *   celulas pintadas, e por isso a conta de cor deles e testada aqui, celula
- *   a celula. O BRILHO e hibrido: alem do feixe, ele tem a festa — que e o
- *   que aparece quando o quadro esta vazio.
+ *   a celula. BRILHO, NEVE e FILME sao hibridos: alem da cor, tem enfeite
+ *   proprio — que e o que aparece quando o quadro esta vazio.
+ *
+ * A lista de enfeites sai do proprio mapa `ENFEITES` do modulo, e o catalogo
+ * de efeitos que rodam de verdade sai do `config.json` — o mesmo arquivo que
+ * o servidor le. Efeito novo entra no desenho e nos testes na mesma edicao,
+ * sem lista paralela para esquecer.
  *
  * Um canvas nao tem outra coisa observavel alem da sequencia de comandos que
  * ele recebe — entao e isso que o teste olha.
@@ -21,8 +26,10 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
+  ENFEITES,
   corDaCelula,
   corDoArcoIris,
   desenharEvento,
@@ -31,31 +38,59 @@ import {
 
 const AREA = { x: 55, y: 111, w: 1000, h: 1020 };
 
+/**
+ * Todo enfeite conhecido, pelo nome que o servidor manda.
+ *
+ * A lista sai do proprio mapa (`ENFEITES`) de proposito: efeito novo entra no
+ * desenho e nos testes na mesma edicao — sem uma segunda lista aqui para
+ * esquecer de atualizar.
+ */
+const NOMES = Object.keys(ENFEITES);
+
+/** Os enfeites que TAMBEM mudam a cor das celulas (a lista hibrida). */
+const HIBRIDOS = ["brilho", "neve", "filme"];
+
+/** Os efeitos que so mudam a cor das celulas: nao pintam por cima. */
+const SO_CELULA = ["arco_iris", "negativo"];
+
 /** Um contexto que so anota o que mandaram ele fazer. */
 function contextoFalso() {
   const comandos = [];
-  const anotar = (nome) => (...args) => comandos.push([nome, ...args]);
-
-  return {
-    comandos,
-    ctx: {
-      save: anotar("save"),
-      restore: anotar("restore"),
-      beginPath: anotar("beginPath"),
-      rect: anotar("rect"),
-      clip: anotar("clip"),
-      fillRect: anotar("fillRect"),
-      strokeRect: anotar("strokeRect"),
-      moveTo: anotar("moveTo"),
-      lineTo: anotar("lineTo"),
-      stroke: anotar("stroke"),
-      globalCompositeOperation: "source-over",
-      globalAlpha: 1,
-      fillStyle: "",
-      strokeStyle: "",
-      lineWidth: 1,
-    },
+  const ctx = {
+    globalCompositeOperation: "source-over",
+    globalAlpha: 1,
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
   };
+
+  // A tinta do momento vai junto do comando: "pintou um retangulo" diz pouco —
+  // ha teste que precisa saber o retangulo, a cor E a mistura (o veu da
+  // TEMPESTADE e escuro e vem ANTES da chuva, e e isso que o separa do
+  // BRILHO; so a lista de retangulos nao provaria nenhuma das duas coisas).
+  const anotar = (nome) => (...args) =>
+    comandos.push([
+      nome,
+      ...args,
+      ctx.fillStyle,
+      ctx.globalAlpha,
+      ctx.globalCompositeOperation,
+    ]);
+
+  Object.assign(ctx, {
+    save: anotar("save"),
+    restore: anotar("restore"),
+    beginPath: anotar("beginPath"),
+    rect: anotar("rect"),
+    clip: anotar("clip"),
+    fillRect: anotar("fillRect"),
+    strokeRect: anotar("strokeRect"),
+    moveTo: anotar("moveTo"),
+    lineTo: anotar("lineTo"),
+    stroke: anotar("stroke"),
+  });
+
+  return { comandos, ctx };
 }
 
 /** Tudo que o efeito mandou pintar, na ordem. */
@@ -66,7 +101,7 @@ function pinturas(comandos) {
 }
 
 test("cada ENFEITE pinta alguma coisa por cima do quadro", () => {
-  for (const efeito of ["caos", "desafio", "rastro", "brilho"]) {
+  for (const efeito of NOMES) {
     const { ctx, comandos } = contextoFalso();
     desenharEvento(ctx, efeito, AREA, 0.7);
 
@@ -92,6 +127,26 @@ test("a HORA DO PIXEL mostra a festa mesmo com o quadro VAZIO", () => {
   }
 });
 
+test("a TEMPESTADE escurece o quadro ANTES de chover", () => {
+  // O veu da noite e o que separa a TEMPESTADE da outra chuva do projeto:
+  // ele cobre o quadro INTEIRO, no escuro e em `source-over` (somar luz nao
+  // escurece nada), e vem antes de qualquer gota. E o unico efeito que TAPA o
+  // desenho de proposito — e o teste existe porque a alternativa era ele cair
+  // no `else` do despacho e virar uma chuva dourada sem ninguem notar.
+  const { ctx, comandos } = contextoFalso();
+  desenharEvento(ctx, "tempestade", AREA, 0.7);
+
+  const primeiro = comandos.find((c) => c[0] === "fillRect");
+  assert.ok(primeiro, "a tempestade nao pintou nada");
+
+  // A posicao dos campos e a do `contextoFalso`: nome, x, y, w, h, cor,
+  // alfa, mistura.
+  const [, x, y, w, h, , alfa, mistura] = primeiro;
+  assert.deepEqual([x, y, w, h], [AREA.x, AREA.y, AREA.w, AREA.h], "a tempestade comecou por outra coisa que nao a noite");
+  assert.equal(mistura, "source-over", "o veu da noite somou luz em vez de escurecer");
+  assert.ok(alfa < 1, "o veu da noite foi pintado opaco: tapou o desenho da comunidade");
+});
+
 test("a moldura do BRILHO fica FORA do quadro — no vao da regua", () => {
   // O corte do quadro (o `clip`) comeria qualquer coisa desenhada para fora
   // dele; a moldura so aparece porque e desenhada ANTES do corte. Se alguem a
@@ -108,26 +163,28 @@ test("a moldura do BRILHO fica FORA do quadro — no vao da regua", () => {
   );
 });
 
-test("o ARCO-IRIS nao pinta NADA por cima: quem muda sao as celulas", () => {
+test("os efeitos SO de celula nao pintam NADA por cima", () => {
   // O pedido que este teste protege: "o modo arco iris ainda fica passando uma
   // div pra la e pra ca, em vez de simplesmente mudar de cor os quadrados ja
   // pintados". Se alguem reintroduzir uma faixa por cima do quadro, ela
-  // reaparece aqui como comando de desenho — e o teste acusa. (O BRILHO
-  // tambem troca a cor das celulas, mas desde a melhoria da HORA DO PIXEL ele
-  // TAMBEM tem enfeite proprio — por isso ele nao entra nesta lista.)
-  for (const t of [0, 0.7, 3.1]) {
-    const { ctx, comandos } = contextoFalso();
-    desenharEvento(ctx, "arco_iris", AREA, t);
-    assert.deepEqual(
-      comandos,
-      [],
-      `com t=${t} o arco_iris mexeu no quadro por cima: ele so pode trocar a cor das celulas`
-    );
+  // reaparece aqui como comando de desenho — e o teste acusa. (O BRILHO, a
+  // NEVE e o FILME tambem trocam a cor das celulas, mas tem enfeite proprio —
+  // por isso eles nao entram nesta lista.)
+  for (const efeito of SO_CELULA) {
+    for (const t of [0, 0.7, 3.1]) {
+      const { ctx, comandos } = contextoFalso();
+      desenharEvento(ctx, efeito, AREA, t);
+      assert.deepEqual(
+        comandos,
+        [],
+        `com t=${t} o ${efeito} mexeu no quadro por cima: ele so pode trocar a cor das celulas`
+      );
+    }
   }
 });
 
 test("o ENFEITE ANIMA: a tinta de agora nao e a de um segundo atras", () => {
-  for (const efeito of ["caos", "desafio", "rastro", "brilho"]) {
+  for (const efeito of NOMES) {
     const a = contextoFalso();
     const b = contextoFalso();
 
@@ -200,12 +257,59 @@ function claridade(hex) {
 test("sem efeito de celula a cor de quem pintou volta INTACTA", () => {
   // A identidade e o contrato: com um enfeite no ar (ou sem evento nenhum) o
   // renderer pergunta a cor celula a celula, e a resposta tem que ser
-  // exatamente a cor que a pessoa escolheu — nao um tom parecido.
-  for (const efeito of [null, undefined, "", "caos", "desafio", "rastro", "inventado"]) {
+  // exatamente a cor que a pessoa escolheu — nao um tom parecido. Todo
+  // enfeite PURO entra na lista; os hibridos ficam de fora porque mexem na
+  // cor de proposito.
+  const puros = NOMES.filter((nome) => !HIBRIDOS.includes(nome));
+  for (const efeito of [null, undefined, "", "inventado", ...puros]) {
     assert.equal(
       corDaCelula(efeito, 3, 4, 0.5, "#3d9bff"),
       "#3d9bff",
       `o efeito ${JSON.stringify(efeito)} mexeu na cor de uma celula`
+    );
+  }
+});
+
+test("cada efeito de celula mexe na cor de quem pintou, e devolve hex", () => {
+  // A outra metade do contrato da identidade: quem DEVE mudar a cor, muda —
+  // e devolve hex, que e o unico formato que `clarear` e `rgba` leem.
+  const originais = ["#3d9bff", "#ff3b5c", "#3dff8a"];
+  for (const efeito of [...SO_CELULA, ...HIBRIDOS]) {
+    for (const original of originais) {
+      const cor = corDaCelula(efeito, 3, 4, 0.5, original);
+      assert.notEqual(cor, original, `o efeito ${efeito} deixou a cor intacta`);
+      assert.match(cor, /^#[0-9a-f]{6}$/, `o efeito ${efeito} nao devolveu hex: ${cor}`);
+    }
+  }
+});
+
+test("o NEGATIVO inverte canal a canal", () => {
+  // A definicao do efeito, presa ao numero: quem escolheu #3d9bff ve #c26400.
+  assert.equal(corDaCelula("negativo", 0, 0, 0, "#3d9bff"), "#c26400");
+  assert.equal(corDaCelula("negativo", 7, 9, 5, "#000000"), "#ffffff");
+});
+
+test("todo efeito do config.json desenha alguma coisa na tela", () => {
+  // A costura entre os dois lados: o servidor le o catalogo do config.json e
+  // manda o `effect` no `event_start`. Se o nome la e o daqui nao baterem, o
+  // evento roda com banner e mais nada — e ninguem descobre ate a LIVE. Este
+  // teste le o MESMO arquivo que o servidor le.
+  const cfg = JSON.parse(
+    readFileSync(new URL("../../config.json", import.meta.url), "utf8")
+  );
+  const catalogo = cfg.events.catalog;
+  assert.ok(catalogo.length > 0, "o catalogo de eventos do config esta vazio");
+
+  for (const evento of catalogo) {
+    const { ctx, comandos } = contextoFalso();
+    desenharEvento(ctx, evento.effect, AREA, 0.7);
+    const pintou = pinturas(comandos).length > 0;
+    assert.equal(
+      pintou,
+      !SO_CELULA.includes(evento.effect),
+      `"${evento.name}" (effect: ${JSON.stringify(evento.effect)}) ${
+        pintou ? "pintou por cima" : "nao pintou nada por cima"
+      } — o nome do efeito no config e o desenho aqui nao batem`
     );
   }
 });

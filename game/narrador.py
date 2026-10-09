@@ -1,9 +1,10 @@
-"""A voz do jogo: presente e chegada viram fala no ar.
+"""A voz do jogo: presente, chegada e evento viram fala no ar.
 
 O pedido que criou este modulo: "quando alguem doar algo, gere um audio igual
 ao tts.py, da play no audio e logo em seguida apaga". A chegada de alguem na
-LIVE ganhou o mesmo tratamento depois: mesma fila, mesmo ciclo
-gerar-tocar-apagar — o que muda e a lista de onde a frase e sorteada.
+LIVE e os eventos (HORA DO PIXEL, CAOS...) ganharam o mesmo tratamento
+depois: mesma fila, mesmo ciclo gerar-tocar-apagar — o que muda e a lista de
+onde a frase e sorteada.
 
 O Narrador e uma thread com fila, pelo mesmo motivo da thread do TikTok:
 gerar a voz e conversar com o servico de sintese leva segundos, e o loop de
@@ -13,6 +14,11 @@ o aviso no telao NA HORA; a fala entra na fila e sai quando der.
 As frases sao SORTEADAS de `game/falas.py` — a lista inteira mora la, fora
 deste modulo, porque conteudo e codigo envelhecem em ritmos diferentes:
 trocar o texto da live nao deveria ser um commit no motor da voz.
+
+A VOZ tambem varia: `tts.vozes` e a lista de vozes por onde as falas rodiziam
+(vazia = sempre a `tts.voz` de sempre). Uma LIVE inteira numa voz so soa como
+um robo lendo avisos; o rodizio faz cada fala soar como alguem diferente
+chamando na tela.
 
 Falha aqui nunca derruba o jogo: sem internet, sem a biblioteca, sem placa de
 som — o que acontece e um log, e o jogo segue em frente. A reproducao usa o
@@ -33,11 +39,18 @@ import threading
 import time
 from typing import Callable
 
-from game.falas import BOAS_VINDAS, FALAS
+from game.falas import ABERTURA_DE_EVENTO, BOAS_VINDAS, FALAS, FIM_DE_EVENTO
 
 logger = logging.getLogger(__name__)
 
 VOZ_PADRAO = "pt-BR-FranciscaNeural"
+
+# As vozes pt-BR que a edge-tts oferece HOJE (conferidas por `list_voices`):
+# so estas tres — as mais antigas (Brenda, Donato, Giovanna...) sairam do
+# servico. Com mais de uma em `tts.vozes`, as falas saem em rodizio; com a
+# lista vazia, tudo sai na `tts.voz` de sempre:
+#   "pt-BR-FranciscaNeural" (feminina), "pt-BR-AntonioNeural" (masculina),
+#   "pt-BR-ThalitaMultilingualNeural" (feminina, multilingue).
 RATE_PADRAO = "+8%"
 PITCH_PADRAO = "+3Hz"
 
@@ -50,9 +63,11 @@ PITCH_PADRAO = "+3Hz"
 # de verdade, e nao uma segunda copia que pode envelhecer.
 FALA_PADRAO = FALAS[0]
 
-# Mesmo plano B para a chegada, com a mesma ancora: a primeira frase de
-# verdade da lista.
+# Mesmo plano B para a chegada e para os eventos, com a mesma ancora: a
+# primeira frase de verdade da lista.
 BOAS_VINDAS_PADRAO = BOAS_VINDAS[0]
+ABERTURA_PADRAO = ABERTURA_DE_EVENTO[0]
+FIM_PADRAO = FIM_DE_EVENTO[0]
 
 # O teto da fila. Numa chuva de rosas, falas atrasadas viram ruido: e melhor
 # calar o presente antigo do que narrar o que ja passou.
@@ -73,6 +88,15 @@ def _frases_do_config(valor, padrao: tuple[str, ...]) -> list[str]:
         if limpas:
             return limpas
     return list(padrao)
+
+
+def _vozes_do_config(valor, padrao: str) -> list[str]:
+    """A lista de vozes do config, limpa; vazia ou ausente usa a voz de sempre."""
+    if isinstance(valor, list):
+        limpas = [str(voz).strip() for voz in valor if str(voz).strip()]
+        if limpas:
+            return limpas
+    return [padrao]
 
 
 def _winmm():
@@ -131,11 +155,20 @@ class Narrador:
         self.pitch = str(cfg.get("pitch") or PITCH_PADRAO)
         self.min_pixels = max(0, int(cfg.get("min_pixels") or 0))
 
-        # As frases do jogo vivem em `game/falas.py`; `tts.falas` e
-        # `tts.boas_vindas` no config substituem as listas inteiras para
-        # quem quiser improvisar sem mexer no codigo.
+        # O rodizio de vozes (`tts.vozes`): com mais de uma, cada fala sai
+        # numa voz — a LIVE para de soar como um robo so. A ordem e fixa (e
+        # nao sorteada): da para prever, testar e ouvir a fila.
+        self.vozes = _vozes_do_config(cfg.get("vozes"), self.voz)
+        self._rodizio = itertools.cycle(self.vozes)
+
+        # As frases do jogo vivem em `game/falas.py`; as chaves equivalentes
+        # do config (`tts.falas`, `tts.boas_vindas`, `tts.eventos`,
+        # `tts.eventos_fim`) substituem as listas inteiras para quem quiser
+        # improvisar sem mexer no codigo.
         self.falas = _frases_do_config(cfg.get("falas"), FALAS)
         self.boas_vindas = _frases_do_config(cfg.get("boas_vindas"), BOAS_VINDAS)
+        self.eventos = _frases_do_config(cfg.get("eventos"), ABERTURA_DE_EVENTO)
+        self.eventos_fim = _frases_do_config(cfg.get("eventos_fim"), FIM_DE_EVENTO)
 
         self._gerar = gerar or self._gerar_edge
         self._tocar = tocar or self._tocar_mci
@@ -173,42 +206,75 @@ class Narrador:
     # A fala
     # ------------------------------------------------------------------
 
-    def texto_do_presente(self, nome: str, quantidade: int, presente: str) -> str:
-        """A fala do presente, sorteada entre as frases do jogo.
+    def _sorteada(
+        self, lista: list[str], padrao: str, valores: dict[str, str], o_que: str
+    ) -> str:
+        """Uma frase da lista, com os valores preenchidos.
 
         O sorteio e o que impede a voz de virar disco riscado: com dezenas
-        de frases, a mesma despedida demora a se repetir e a live soa viva.
+        de frases, a mesma fala demora a se repetir e a live soa viva.
 
-        O arroba nao se pronuncia ("@ana" vira "ana") e as frases sao
-        editaveis por quem quiser: um `{placeholder}` invalido em uma delas
-        nao pode deixar a live muda — cai na fala padrao e segue.
+        E as frases sao editaveis por quem quiser: um `{placeholder}`
+        invalido em uma delas nao pode deixar a live muda — vira um aviso no
+        log e a frase padrao entra no lugar (ver `FALA_PADRAO`).
         """
-        valores = {
-            "nome": (nome or "").strip().lstrip("@"),
-            "quantidade": f"{int(quantidade)}x " if int(quantidade) > 1 else "",
-            "presente": presente or "presente",
-        }
-        modelo = random.choice(self.falas)
+        modelo = random.choice(lista)
         try:
             return modelo.format(**valores)
         except (KeyError, IndexError, ValueError):
-            logger.warning("Fala com placeholder invalido: %r", modelo)
-            return FALA_PADRAO.format(**valores)
+            logger.warning("%s com placeholder invalido: %r", o_que, modelo)
+            return padrao.format(**valores)
+
+    def texto_do_presente(self, nome: str, quantidade: int, presente: str) -> str:
+        """A fala do presente, sorteada entre as frases do jogo.
+
+        O arroba nao se pronuncia ("@ana" vira "ana").
+        """
+        return self._sorteada(
+            self.falas,
+            FALA_PADRAO,
+            {
+                "nome": (nome or "").strip().lstrip("@"),
+                "quantidade": f"{int(quantidade)}x " if int(quantidade) > 1 else "",
+                "presente": presente or "presente",
+            },
+            "Fala",
+        )
 
     def texto_de_entrada(self, nome: str) -> str:
         """A fala de quem acabou de chegar, sorteada entre as do jogo.
 
         Sem `{quantidade}` nem `{presente}`: a chegada nao tem premio, tem
-        so um nome — e e por ele que a voz chama. Mesmo plano B do presente:
-        um placeholder invalido cai na frase padrao em vez de calar.
+        so um nome — e e por ele que a voz chama.
         """
-        valores = {"nome": (nome or "").strip().lstrip("@")}
-        modelo = random.choice(self.boas_vindas)
-        try:
-            return modelo.format(**valores)
-        except (KeyError, IndexError, ValueError):
-            logger.warning("Boas-vindas com placeholder invalido: %r", modelo)
-            return BOAS_VINDAS_PADRAO.format(**valores)
+        return self._sorteada(
+            self.boas_vindas,
+            BOAS_VINDAS_PADRAO,
+            {"nome": (nome or "").strip().lstrip("@")},
+            "Boas-vindas",
+        )
+
+    def texto_de_evento(self, nome: str) -> str:
+        """O anuncio de um evento que comecou.
+
+        Atencao: aqui o `{nome}` das frases e o nome do EVENTO ("PIXEL
+        TURBO"), nao o de uma pessoa.
+        """
+        return self._sorteada(
+            self.eventos,
+            ABERTURA_PADRAO,
+            {"nome": (nome or "").strip() or "evento"},
+            "Anuncio de evento",
+        )
+
+    def texto_do_fim_de_evento(self, nome: str) -> str:
+        """O aviso de que o evento acabou. Mesmo `{nome}` de evento."""
+        return self._sorteada(
+            self.eventos_fim,
+            FIM_PADRAO,
+            {"nome": (nome or "").strip() or "evento"},
+            "Fim de evento",
+        )
 
     def anunciar_presente(
         self, nome: str, quantidade: int, presente: str, pixels: int
@@ -236,6 +302,29 @@ class Narrador:
             return None
 
         return self._enfileirar(self.texto_de_entrada(nome), nome)
+
+    def anunciar_evento(self, nome: str) -> str | None:
+        """Enfileira o anuncio de um evento que comecou.
+
+        A voz e o segundo canal de aviso: o banner esta na tela, mas quem
+        esta de costas para ela so fica sabendo pelo alto-falante. Mesma
+        fila e mesmas regras das outras falas.
+        """
+        if not self.ativo:
+            return None
+
+        return self._enfileirar(
+            self.texto_de_evento(nome), f"o evento {nome or '?'}"
+        )
+
+    def anunciar_fim_de_evento(self, nome: str) -> str | None:
+        """Enfileira o aviso de que o evento acabou."""
+        if not self.ativo:
+            return None
+
+        return self._enfileirar(
+            self.texto_do_fim_de_evento(nome), f"o fim do evento {nome or '?'}"
+        )
 
     def _enfileirar(self, texto: str, nome: str) -> str:
         """Po na fila sem bloquear. Cheia, a fala mais antiga sai.
@@ -282,6 +371,10 @@ class Narrador:
     # Motores de verdade: edge-tts gera, MCI toca
     # ------------------------------------------------------------------
 
+    def _proxima_voz(self) -> str:
+        """A voz da proxima fala: o proximo nome do rodizio."""
+        return next(self._rodizio)
+
     def _gerar_edge(self, texto: str) -> str:
         """Gera o mp3 da fala e devolve o caminho. Mesma voz do tts.py."""
         import asyncio
@@ -291,13 +384,24 @@ class Narrador:
         descritor, caminho = tempfile.mkstemp(prefix="pixelworld_tts_", suffix=".mp3")
         os.close(descritor)
 
-        async def salvar() -> None:
+        async def salvar(voz_nome: str) -> None:
             voz = edge_tts.Communicate(
-                text=texto, voice=self.voz, rate=self.rate, pitch=self.pitch
+                text=texto, voice=voz_nome, rate=self.rate, pitch=self.pitch
             )
             await voz.save(caminho)
 
-        asyncio.run(salvar())
+        escolhida = self._proxima_voz()
+        try:
+            asyncio.run(salvar(escolhida))
+        except Exception:
+            # Um nome de voz errado no config (ou uma voz aposentada pelo
+            # servico, como aconteceu com as pt-BR antigas) nao pode deixar a
+            # LIVE muda: a fala sai na voz padrao, que e a unica que a gente
+            # sabe que existe.
+            if escolhida == VOZ_PADRAO:
+                raise
+            logger.warning("A voz %s falhou; falando com %s", escolhida, VOZ_PADRAO)
+            asyncio.run(salvar(VOZ_PADRAO))
         return caminho
 
     def _tocar_mci(self, caminho: str) -> None:

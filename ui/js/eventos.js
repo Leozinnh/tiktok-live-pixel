@@ -9,11 +9,13 @@
  * Sao dois tipos de efeito, e a diferenca decide onde cada um mora:
  *
  * - o ENFEITE por cima do quadro — o glitch do CAOS, a mira do DESAFIO, os
- *   riscos do PIXEL TURBO e a festa da HORA DO PIXEL — e desenhado aqui, e
- *   quem chama e o `renderer.desenhar`;
- * - o efeito de CELULA — o ARCO-IRIS e o feixe do BRILHO — troca a COR das
- *   celulas ja pintadas, e quem pinta celula e o renderer. Aqui moram so as
- *   contas de cor (`corDaCelula`).
+ *   riscos do PIXEL TURBO, a festa da HORA DO PIXEL, a TEMPESTADE, a CHUVA
+ *   DE CODIGO, os FOGOS, os flocos da NEVE, o tubo do ARCADE e o FILME
+ *   ANTIGO — e desenhado aqui, e quem chama e o `renderer.desenhar`;
+ * - o efeito de CELULA — o ARCO-IRIS, o feixe do BRILHO, o NEGATIVO, a
+ *   geada da NEVE e o sepia do FILME — troca a COR das celulas ja pintadas,
+ *   e quem pinta celula e o renderer. Aqui moram so as contas de cor
+ *   (`corDaCelula`).
  *
  * A regra que separa os dois: o enfeite decora a TELA, o efeito de celula
  * muda o DESENHO. Quando os dois disputam o mesmo pixel, quem decide e o que
@@ -24,7 +26,9 @@
  * O BRILHO e os dois ao mesmo tempo, e nao contradiz a regra: o feixe acende
  * as celulas pintadas, e a festa (moldura + chuva de pixels dourados) toma a
  * tela. O feixe sozinho nao bastava — ele so existe onde alguem JA pintou, e
- * num quadro vazio a HORA DO PIXEL era so o banner.
+ * num quadro vazio a HORA DO PIXEL era so o banner. A NEVE e o FILME ANTIGO
+ * seguem a mesma receita mista: a geada e o sepia nas celulas, os flocos e a
+ * pelicula velha por cima.
  *
  * Tudo aqui e desenhado por cima da grade, no MESMO canvas: um terceiro canvas
  * so para o enfeite custaria mais memoria do que o enfeite inteiro. E nada
@@ -110,6 +114,104 @@ const CORES_DO_DESTELO = ["#ffd93d", "#fff1c2", "#ffb02e"];
 /** A grossura da moldura acesa da HORA DO PIXEL, em pixels de CSS. */
 const MOLDURA_DO_BRILHO = 8;
 
+/** Quantos fios de chuva cruzam o quadro na TEMPESTADE. */
+const FIOS_DA_TEMPESTADE = 46;
+
+/**
+ * De quantos em quantos segundos cai um relampago.
+ *
+ * 1,9s: mais devagar vira cena parada com um susto raro; mais rapido vira
+ * estrobo, e a tela piscando sem parar cansa quem so quer ver o desenho.
+ */
+const CICLO_DO_RAIO = 1.9;
+
+/** Quanto do ciclo do raio o clarao dura — o resto e so a chuva. */
+const DURACAO_DO_CLARAO = 0.22;
+
+/** O quanto a noite da TEMPESTADE escurece o quadro (0 = nada, 1 = breu). */
+const NOITE_DA_TEMPESTADE = 0.34;
+
+/** Quantos degraus o risco do raio tem, de cima a baixo do quadro. */
+const PASSOS_DO_RAIO = 12;
+
+/** O ceu da TEMPESTADE: azul tao escuro que le como noite, nunca como cinza. */
+const NOITE = "#04070f";
+
+/** O fio da chuva: azul claro e dessaturado, para nao competir com o desenho. */
+const CHUVA = "#9fc4ff";
+
+/** O branco-azulado do clarao e o branco do risco do raio. */
+const CLARAO = "#cfe4ff";
+const RAIO = "#f4faff";
+
+/** A cor do codigo caindo e a da cabeca acesa de cada coluna. */
+const VERDE_DO_CODIGO = "#39ff6a";
+const CABECA_DO_CODIGO = "#d8ffe0";
+
+/** A cor da geada da NEVE: branco-azulado, o tom de coisa congelada. */
+const GELO = "#dceeff";
+
+/**
+ * O quanto o gelo cobre a celula, do fraco ao forte.
+ *
+ * A geada nao e um filtro parado: ela cintila em ondas pela diagonal (a mesma
+ * familia do arco-iris e do brilho), e estes dois numeros sao o quanto ela
+ * tinge no vale e na crista da onda.
+ */
+const GELO_MINIMO = 0.2;
+const GELO_MAXIMO = 0.5;
+
+/** Quantos flocos caem ao mesmo tempo na NEVE. */
+const FLOCOS_DA_NEVE = 34;
+
+/** A cor do floco: branco levemente azulado, para ler contra a geada. */
+const FLOCOS = "#f2f7ff";
+
+/** O tom amarelado do FILME ANTIGO — o sepia de papel envelhecido. */
+const SEPIA = "#c9b48f";
+
+/** O quanto o sepia entra na celula; o resto e o cinza da pelicula. */
+const SEPIA_DO_FILME = 0.45;
+
+/**
+ * Quantos quadros por segundo a pelicula do FILME ANTIGO roda.
+ *
+ * 24 e o numero do cinema — e o que faz o tremor de luz e os riscos piscarem
+ * como projetor (a 60 quadros por segundo eles leriam como monitor).
+ */
+const QUADROS_DO_FILME = 24;
+
+/** A grossura de cada degrau da vinheta do FILME e quantos degraus ela tem. */
+const VINHETA_DO_FILME = 26;
+const DEGRAUS_DA_VINHETA = 5;
+
+/** Quantos riscos de pelicula podem cruzar o quadro. */
+const RISCOS_DO_FILME = 3;
+
+/** Quantas bombas sobem ao mesmo tempo na QUEIMA DE FOGOS. */
+const BOMBAS_DOS_FOGOS = 3;
+
+/** Quanto do ciclo de uma bomba e a subida — o resto e a explosao. */
+const SUBIDA_DOS_FOGOS = 0.3;
+
+/** Quantas faiscas cada explosao abre. */
+const FAISCAS_DOS_FOGOS = 16;
+
+/** As cores das explosoes, uma por bomba. */
+const CORES_DOS_FOGOS = ["#ff6fd8", "#5ff0ff", "#ffd93d"];
+
+/** De quantos em quantos pixels de CSS cai um risco de varredura do ARCADE. */
+const LINHAS_DO_ARCADE = 5;
+
+/** A que velocidade os riscos do ARCADE rolam para cima, em pixels/s. */
+const ROLAGEM_DO_ARCADE = 9;
+
+/** A que velocidade a faixa de varredura do ARCADE desce, em voltas/s. */
+const VARREDURA_DO_ARCADE = 0.22;
+
+/** O verde do fosforo: a cara de qualquer tela de tubo. */
+const FOSFORO = "#7dffd4";
+
 /**
  * Um numero estavel entre 0 e 1 a partir de um inteiro.
  *
@@ -175,6 +277,47 @@ function corDoBrilho(x, y, t, cor) {
 }
 
 /**
+ * A cor de uma celula pintada no NEGATIVO: a foto invertida.
+ *
+ * O efeito mais barato de explicar e o mais estranho de ver: cada canal da
+ * cor vira o seu complemento (255 menos o valor), como o negativo de um
+ * filme. O desenho da comunidade continua exatamente onde estava — invertido
+ * canal a canal, e so.
+ */
+function corDoNegativo(cor) {
+  const { r, g, b } = hexParaRgb(cor);
+  const canal = (v) => (255 - v).toString(16).padStart(2, "0");
+  return `#${canal(r)}${canal(g)}${canal(b)}`;
+}
+
+/**
+ * A cor de uma celula pintada sob a NEVE: a geada.
+ *
+ * A neve nao troca a cor de quem pintou: ela POUSA em cima — cada celula
+ * ganha uma camada de gelo, e o desenho segue legivel por baixo. A onda pela
+ * diagonal faz a geada cintilar devagar; parada, ela seria so um filtro
+ * azulado, e o nome do evento promete neve, nao um filtro.
+ */
+function corDaNeve(cor, x, y, t) {
+  const onda = 0.5 + 0.5 * Math.sin((x + y) * 0.55 - t * 1.6);
+  return misturar(cor, GELO, GELO_MINIMO + (GELO_MAXIMO - GELO_MINIMO) * onda);
+}
+
+/**
+ * A cor de uma celula pintada no FILME ANTIGO: preto e branco com sepia.
+ *
+ * Primeiro a pelicula perde a cor — a luminancia da cor original, para o
+ * olho nao achar que virou outro pixel —, e depois leva o sepia, o amarelo
+ * de papel envelhecido. E o mesmo desenho, so que num projetor de 1960.
+ */
+function corDoFilme(cor) {
+  const { r, g, b } = hexParaRgb(cor);
+  const luz = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+  const canal = luz.toString(16).padStart(2, "0");
+  return misturar(`#${canal}${canal}${canal}`, SEPIA, SEPIA_DO_FILME);
+}
+
+/**
  * A cor com que UMA celula pintada deve sair neste quadro.
  *
  * E o unico ponto por onde o renderer pergunta a cor — ele nao sabe (nem
@@ -185,6 +328,9 @@ function corDoBrilho(x, y, t, cor) {
 export function corDaCelula(efeito, x, y, t, cor) {
   if (efeito === "arco_iris") return corDoArcoIris(x, y, t);
   if (efeito === "brilho") return corDoBrilho(x, y, t, cor);
+  if (efeito === "negativo") return corDoNegativo(cor);
+  if (efeito === "neve") return corDaNeve(cor, x, y, t);
+  if (efeito === "filme") return corDoFilme(cor);
   return cor;
 }
 
@@ -258,9 +404,34 @@ export function deslocamentoDoEvento(efeito, t = 0) {
 }
 
 /**
+ * Os enfeites, por nome de efeito. O `config.json` manda o nome no
+ * `event_start`, e este mapa e a unica ponte entre o nome e o desenho.
+ *
+ * Mapa e nao uma cadeia de `if`: com dez efeitos, o `else` final vira uma
+ * armadilha — um efeito novo sem ramo proprio cai calado no desenho do
+ * BRILHO. Aqui, efeito sem entrada simplesmente nao desenha, e o teste
+ * "cada ENFEITE pinta" acusa na hora.
+ *
+ * Efeito SO de celula (ARCO-IRIS, NEGATIVO) nao entra: quem desenha a cor
+ * deles e o renderer, pelo `corDaCelula`.
+ */
+export const ENFEITES = {
+  caos: glitchDoCaos,
+  desafio: miraDoDesafio,
+  rastro: rastrosDoTurbo,
+  brilho: chuvaDoBrilho,
+  tempestade: tempestadeDoEvento,
+  codigo: chuvaDoCodigo,
+  fogos: fogosDoEvento,
+  neve: flocosDaNeve,
+  arcade: scanlinesDoArcade,
+  filme: filmeAntigo,
+};
+
+/**
  * Desenha o ENFEITE do evento por cima da grade. `area` e o retangulo da
  * grade, em pixels de CSS — mais `cols`/`rows`, que a chuva da HORA DO PIXEL
- * usa para cair em tamanho de celula.
+ * e a de codigo usam para cair em tamanho de celula.
  *
  * Sem efeito conhecido nao desenha NADA — nem um retangulo transparente: um
  * evento sem enfeite e so multiplicador e banner, e nao pode custar trabalho
@@ -269,8 +440,8 @@ export function deslocamentoDoEvento(efeito, t = 0) {
 export function desenharEvento(ctx, efeito, area, t = 0) {
   if (!area) return;
 
-  const enfeites = ["caos", "desafio", "rastro", "brilho"];
-  if (!enfeites.includes(efeito)) return;
+  const enfeite = ENFEITES[efeito];
+  if (typeof enfeite !== "function") return;
 
   // A moldura da HORA DO PIXEL fica no vao entre a grade e a regua, FORA do
   // quadro — e por isso e desenhada antes do corte, que a comeria.
@@ -286,15 +457,7 @@ export function desenharEvento(ctx, efeito, area, t = 0) {
   ctx.rect(area.x, area.y, area.w, area.h);
   ctx.clip();
 
-  if (efeito === "caos") {
-    glitchDoCaos(ctx, area, t);
-  } else if (efeito === "desafio") {
-    miraDoDesafio(ctx, area, t);
-  } else if (efeito === "rastro") {
-    rastrosDoTurbo(ctx, area, t);
-  } else {
-    chuvaDoBrilho(ctx, area, t);
-  }
+  enfeite(ctx, area, t);
 
   ctx.restore();
 }
@@ -468,6 +631,313 @@ function rastrosDoTurbo(ctx, area, t) {
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = "#d8feff";
     ctx.fillRect(x, y - altura * 0.4, altura * 2.4, altura * 1.8);
+  }
+}
+
+/**
+ * A TEMPESTADE: a noite cai, a chuva desce e o raio risca o ceu.
+ *
+ * O evento existe para punir quem esta de costas: a tela pisca, troveja no
+ * nome e o multiplicador dobra. O desenho segue a mesma ideia — em vez de
+ * enfeitar o quadro, ele MUDA O CLIMA dele:
+ *
+ *   1. a noite, um veu escuro por cima do desenho — a comunidade ve o que
+ *      pintou, mas sob a chuva;
+ *   2. a chuva, fios curtos caindo em colunas fixas;
+ *   3. o raio, a cada ~1,9s: um clarao no quadro inteiro e um risco
+ *      quebrado descendo, sempre na mesma forma durante a piscada.
+ *
+ * A noite e a unica coisa deste arquivo que TAPA o desenho de proposito — e
+ * por isso ela e fraca (0,34) e temporaria: a regra continua valendo (o
+ * desenho e o que a audiencia pagou para ver), e a tempestade passa.
+ */
+function tempestadeDoEvento(ctx, area, t) {
+  // `source-over` com alfa, e nao `lighter`: escurecer nao se faz somando luz.
+  ctx.globalAlpha = NOITE_DA_TEMPESTADE;
+  ctx.fillStyle = NOITE;
+  ctx.fillRect(area.x, area.y, area.w, area.h);
+
+  // Daqui para baixo tudo SOMA luz (a chuva e o raio sao claridade na noite).
+  ctx.globalCompositeOperation = "lighter";
+
+  for (let i = 0; i < FIOS_DA_TEMPESTADE; i += 1) {
+    const x = area.x + ruido(i * 7.7) * area.w;
+    const velocidade = 0.9 + 0.9 * ruido(i * 3.3); // quedas por segundo
+    const comprimento = area.h * (0.02 + 0.05 * ruido(i * 5.1));
+    const y = area.y + ((t * velocidade + ruido(i * 9.9)) % 1) * area.h;
+
+    ctx.globalAlpha = 0.06 + 0.12 * ruido(i * 2.7);
+    ctx.fillStyle = CHUVA;
+    // Mais fino que alto de proposito: o fio da chuva, e nao uma barra.
+    ctx.fillRect(x, y, 1.5, comprimento);
+  }
+
+  // O raio. O ciclo inteiro e `floor(t / CICLO)`: o `floor` e o que congela a
+  // forma do risco durante a piscada — se ela fosse sorteada por `t`, o raio
+  // tremeria como um verme a cada quadro, em vez de ser UM raio por relampago.
+  const ciclo = Math.floor(t / CICLO_DO_RAIO);
+  const fase = (t % CICLO_DO_RAIO) / CICLO_DO_RAIO;
+  if (fase >= DURACAO_DO_CLARAO) return;
+
+  const forca = 1 - fase / DURACAO_DO_CLARAO;
+  ctx.globalAlpha = 0.14 + 0.3 * forca * forca;
+  ctx.fillStyle = CLARAO;
+  ctx.fillRect(area.x, area.y, area.w, area.h);
+
+  // O risco: degraus empilhados descendo, cada um desviando um pouco do
+  // anterior. O desvio e sorteado por (ciclo, degrau) — o mesmo relampago
+  // desenha sempre o mesmo raio, e cada relampago desenha um raio diferente.
+  let x = area.x + ruido(ciclo * 12.9) * area.w;
+  const altura = area.h / PASSOS_DO_RAIO;
+  ctx.globalAlpha = 0.45 + 0.55 * forca;
+  ctx.fillStyle = RAIO;
+  for (let passo = 0; passo < PASSOS_DO_RAIO; passo += 1) {
+    x += (ruido(ciclo * 31.7 + passo * 4.1) * 2 - 1) * area.w * 0.035;
+    ctx.fillRect(x, area.y + passo * altura, 3, altura + 2);
+  }
+}
+
+/**
+ * A CHUVA DE CODIGO: colunas verdes caindo, tela de terminal.
+ *
+ * A piada visual e conhecida — o filme que todo mundo ja viu — e o evento e o
+ * unico que nao promete premio: o multiplicador e 1.0 e o que a CHUVA DE
+ * CODIGO entrega e o espetaculo. Por isso ela cai no tamanho exato da CELULA:
+ * os quadradinhos verdes sao da mesma familia dos que a sala pinta, e a tela
+ * parece o proprio jogo sendo hackeado.
+ *
+ * Cada coluna tem velocidade, comprimento de cauda e defasagem sorteados uma
+ * vez (pelo indice, via `ruido`); a cada quadro muda so a posicao. A cabeca e
+ * branca e a cauda apaga quadratica: o olho le "letra acesa com rastro", que
+ * e o que da a direcao da queda.
+ */
+function chuvaDoCodigo(ctx, area, t) {
+  const cols = Math.max(1, Math.round(area.cols || 25));
+  const cela = area.w / cols;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+
+  for (let i = 0; i < cols; i += 1) {
+    const velocidade = 0.22 + 0.5 * ruido(i * 4.3); // quedas por segundo
+    const cauda = 5 + Math.floor(ruido(i * 6.7) * 8);
+    const progresso = (t * velocidade + ruido(i * 9.1)) % 1;
+
+    // A viagem cobre a altura MAIS a cauda: assim a coluna entra por cima com
+    // a cauda inteira atras e sai por baixo inteira — sem aparecer cortada no
+    // meio do quadro, que denunciaria o truque.
+    const topo = area.y + progresso * (area.h + cauda * cela) - cauda * cela;
+
+    for (let j = 0; j < cauda; j += 1) {
+      const y = topo + j * cela;
+      if (y < area.y - cela || y > area.y + area.h) continue;
+
+      const apagando = 1 - j / cauda;
+      ctx.globalAlpha = 0.8 * apagando * apagando;
+      ctx.fillStyle = j === 0 ? CABECA_DO_CODIGO : VERDE_DO_CODIGO;
+      // O quadrado menor que a celula, com uma folga: le como caractere
+      // aceso, e nao como uma coluna solida pintada.
+      ctx.fillRect(
+        area.x + i * cela + cela * 0.14,
+        y + cela * 0.14,
+        cela * 0.72,
+        cela * 0.72
+      );
+    }
+  }
+
+  ctx.restore();
+}
+
+/**
+ * A QUEIMA DE FOGOS: as bombas sobem, explodem e a tela toda se enfeita.
+ *
+ * Cada bomba tem o proprio ritmo: sobe como um ponto aceso e vira um anel de
+ * faiscas na altura mais alta. As tres sao defasadas de proposito — sempre
+ * tem uma subindo ou explodindo no ar, que e o que faz a queima parecer
+ * continua, e nao um conta-gotas.
+ *
+ * A bomba inteira e funcao do tempo: `u` (0..1) e o quanto ela andou no
+ * proprio ciclo, e cada fase e um pedaco de `u`. Nada e sorteado por quadro
+ * — pelo motivo de sempre: o OBS captura o que desenhamos, e um fogo que
+ * troca de forma a cada captura leria como chuvisco.
+ */
+function fogosDoEvento(ctx, area, t) {
+  ctx.globalCompositeOperation = "lighter";
+
+  for (let i = 0; i < BOMBAS_DOS_FOGOS; i += 1) {
+    const periodo = 2.4 + 1.6 * ruido(i * 3.1); // segundos por bomba
+    const u = ((t + ruido(i * 7.7) * periodo) % periodo) / periodo;
+    const x = area.x + (0.15 + 0.7 * ruido(i * 5.3)) * area.w;
+    const altura = area.y + (0.08 + 0.3 * ruido(i * 9.1)) * area.h;
+    const cor = CORES_DOS_FOGOS[i % CORES_DOS_FOGOS.length];
+
+    if (u < SUBIDA_DOS_FOGOS) {
+      // A subida: o ponto aceso galgando o ceu, com um rastro curto atras.
+      const p = u / SUBIDA_DOS_FOGOS;
+      const y = area.y + area.h - (area.y + area.h - altura) * p;
+      ctx.fillStyle = cor;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(x - 1.5, y, 3, 3);
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(x - 1, y + 3, 2, Math.max(4, area.h * 0.025));
+      continue;
+    }
+
+    // A explosao: um anel que abre e apaga, com um desvio por faisca para o
+    // anel nao sair de compasso. O desvio e sorteado por (bomba, faisca) —
+    // entao ele fica parado durante a explosao inteira, e muda de bomba para
+    // bomba.
+    const p = (u - SUBIDA_DOS_FOGOS) / (1 - SUBIDA_DOS_FOGOS);
+    const apagando = (1 - p) * (1 - p);
+    const tamanho = Math.max(1.5, 4.5 * (1 - p));
+    const base = area.h * (0.1 + 0.12 * ruido(i * 4.9));
+    ctx.fillStyle = cor;
+
+    for (let k = 0; k < FAISCAS_DOS_FOGOS; k += 1) {
+      const angulo =
+        (k / FAISCAS_DOS_FOGOS) * Math.PI * 2 +
+        (ruido(i * 11.3 + k * 1.9) - 0.5) * 0.5;
+      const raio = p * base * (0.8 + 0.4 * ruido(i * 2.1 + k * 5.7));
+      ctx.globalAlpha = 0.85 * apagando;
+      ctx.fillRect(
+        x + Math.cos(angulo) * raio - tamanho / 2,
+        altura + Math.sin(angulo) * raio * 0.85 - tamanho / 2,
+        tamanho,
+        tamanho
+      );
+    }
+  }
+}
+
+/**
+ * A NEVE caindo: flocos lentos e graúdos, balancando ao vento.
+ *
+ * O par oposto da TEMPESTADE: la e chuva rapida e violenta, com noite e raio;
+ * aqui e neve — devagar, do tamanho de meia celula, e cada floco descendo no
+ * proprio ritmo. O balanco lateral e o que separa "neve" de "pontos
+ * descendo": um floco de verdade nao cai em linha reta.
+ */
+function flocosDaNeve(ctx, area, t) {
+  ctx.globalCompositeOperation = "lighter";
+
+  for (let i = 0; i < FLOCOS_DA_NEVE; i += 1) {
+    const tamanho = Math.max(2, area.w * (0.008 + 0.012 * ruido(i * 5.9)));
+    const velocidade = 0.1 + 0.16 * ruido(i * 3.7); // quedas por segundo
+    const progresso = (t * velocidade + ruido(i * 7.3)) % 1;
+    const balanco =
+      Math.sin(t * (0.6 + 0.8 * ruido(i * 2.9)) + ruido(i * 11.1) * 6.28) *
+      area.w *
+      0.02;
+    const x = area.x + ruido(i * 1.7) * area.w + balanco;
+    const y = area.y + progresso * (area.h + tamanho) - tamanho;
+
+    // Entra e sai de cena sem piscar: some suave nas pontas do caminho.
+    const aparecendo = Math.min(1, progresso * 6, (1 - progresso) * 6);
+    ctx.globalAlpha = (0.3 + 0.45 * ruido(i * 9.7)) * aparecendo;
+    ctx.fillStyle = FLOCOS;
+    ctx.fillRect(x, y, tamanho, tamanho);
+  }
+}
+
+/**
+ * O ARCADE: o quadro virou a tela de um fliperama.
+ *
+ * Sao tres camadas, todas baratas, e juntas leem como tubo de verdade:
+ *
+ *   1. os riscos de varredura — linhas frias e finas entre as linhas de
+ *      fosforo —, rolando devagar para cima, como tela de tubo mal ajustada;
+ *   2. o banho de fosforo: um verde fraco por cima de tudo;
+ *   3. a faixa de varredura descendo: o instante em que o canhao redesenha o
+ *      quadro, de cima a baixo.
+ *
+ * Nada disso esconde o desenho: as linhas somam 0,16 de alfa e a faixa 0,07 —
+ * o pixel da comunidade continua o dono da tela.
+ */
+function scanlinesDoArcade(ctx, area, t) {
+  // 1. As linhas frias. Elas ESCURECEM (source-over): somar luz clarearia
+  // justamente onde a tela de tubo tem o vao entre as linhas de fosforo.
+  const deslocamento = (t * ROLAGEM_DO_ARCADE) % LINHAS_DO_ARCADE;
+  ctx.fillStyle = "#020604";
+  ctx.globalAlpha = 0.16;
+  for (
+    let y = area.y + deslocamento - LINHAS_DO_ARCADE;
+    y < area.y + area.h;
+    y += LINHAS_DO_ARCADE
+  ) {
+    ctx.fillRect(area.x, y, area.w, 1.6);
+  }
+
+  ctx.globalCompositeOperation = "lighter";
+
+  // 2. O banho de fosforo.
+  ctx.globalAlpha = 0.05;
+  ctx.fillStyle = FOSFORO;
+  ctx.fillRect(area.x, area.y, area.w, area.h);
+
+  // 3. A faixa de varredura.
+  const altura = area.h * 0.12;
+  const y = area.y + ((t * VARREDURA_DO_ARCADE) % 1) * (area.h + altura) - altura;
+  ctx.globalAlpha = 0.07;
+  ctx.fillRect(area.x, y, area.w, altura);
+}
+
+/**
+ * O FILME ANTIGO: o quadro virou pelicula de 1960.
+ *
+ * O sepia das celulas (ver `corDoFilme`) e metade do efeito; a outra metade
+ * e o que a pelicula faz POR CIMA do quadro:
+ *
+ *   1. o tremor de luz — um veu que muda de intensidade a cada quadro (24 por
+ *      segundo, o numero do cinema): e o que faz a tela piscar como projetor,
+ *      e nao como monitor;
+ *   2. a vinheta — degraus escuros empilhados das bordas para dentro, o
+ *      escuro da lente que nao alcancava os cantos;
+ *   3. os riscos e a poeira — raros e por quadro, como num rolo de verdade.
+ */
+function filmeAntigo(ctx, area, t) {
+  const quadro = Math.floor(t * QUADROS_DO_FILME);
+
+  // 1. O tremor de luz.
+  ctx.globalAlpha = 0.03 + 0.05 * ruido(quadro * 0.77);
+  ctx.fillStyle = "#1a1208";
+  ctx.fillRect(area.x, area.y, area.w, area.h);
+
+  // 2. A vinheta: o anel k fica a `k * passo` da borda, e o de fora e o mais
+  // escuro — por isso o alfa cai conforme o anel entra.
+  ctx.fillStyle = "#0a0705";
+  for (let k = 0; k < DEGRAUS_DA_VINHETA; k += 1) {
+    const d = k * VINHETA_DO_FILME;
+    const lado = Math.max(0, area.h - d * 2);
+    ctx.globalAlpha = 0.2 - k * 0.032;
+    ctx.fillRect(area.x, area.y + d, area.w, VINHETA_DO_FILME);
+    ctx.fillRect(
+      area.x,
+      area.y + area.h - d - VINHETA_DO_FILME,
+      area.w,
+      VINHETA_DO_FILME
+    );
+    ctx.fillRect(area.x + d, area.y + d, VINHETA_DO_FILME, lado);
+    ctx.fillRect(
+      area.x + area.w - d - VINHETA_DO_FILME,
+      area.y + d,
+      VINHETA_DO_FILME,
+      lado
+    );
+  }
+
+  // 3. Os riscos: cada quadro sorteia de novo, e a maioria dos quadros nao
+  // tem risco nenhum — e isso que faz o que aparece parecer defeito de
+  // pelicula, e nao enfeite.
+  ctx.globalCompositeOperation = "lighter";
+  for (let r = 0; r < RISCOS_DO_FILME; r += 1) {
+    if (ruido(quadro * 7.7 + r * 13.1) < 0.86) continue;
+    const x = area.x + ruido(quadro * 3.3 + r * 5.9) * area.w;
+    const y = area.y + ruido(quadro * 1.9 + r * 8.3) * area.h * 0.5;
+    const altura = area.h * (0.1 + 0.36 * ruido(quadro * 4.1 + r * 2.7));
+    ctx.globalAlpha = 0.1 + 0.12 * ruido(quadro * 6.1 + r * 3.7);
+    ctx.fillStyle = "#fff6e0";
+    ctx.fillRect(x, y, 1.5, altura);
   }
 }
 

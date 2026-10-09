@@ -56,11 +56,14 @@
   "tts": {
     "active": true,
     "voz": "pt-BR-FranciscaNeural",
+    "vozes": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural", "pt-BR-ThalitaMultilingualNeural"],
     "rate": "+8%",
     "pitch": "+3Hz",
     "min_pixels": 0,
     "falas": [],
-    "boas_vindas": []
+    "boas_vindas": [],
+    "eventos": [],
+    "eventos_fim": []
   },
 
   "rewards": {
@@ -114,7 +117,14 @@
       { "key": "arco_iris",     "name": "ARCO-ÍRIS",     "emoji": "🌈", "duration": 60, "multiplier": 1.0, "weight": 2.0, "effect": "arco_iris" },
       { "key": "pixel_turbo",   "name": "PIXEL TURBO",   "emoji": "⚡", "duration": 30, "multiplier": 3.0, "weight": 3.0, "effect": "rastro" },
       { "key": "caos",          "name": "CAOS",          "emoji": "💥", "duration": 20, "multiplier": 1.5, "weight": 1.0, "effect": "caos" },
-      { "key": "desafio",       "name": "DESAFIO",       "emoji": "🎯", "duration": 45, "multiplier": 1.0, "weight": 1.0, "effect": "desafio" }
+      { "key": "desafio",       "name": "DESAFIO",       "emoji": "🎯", "duration": 45, "multiplier": 1.0, "weight": 1.0, "effect": "desafio" },
+      { "key": "tempestade",    "name": "TEMPESTADE",    "emoji": "⛈️", "duration": 25, "multiplier": 2.0, "weight": 1.5, "effect": "tempestade" },
+      { "key": "codigo",        "name": "CHUVA DE CÓDIGO", "emoji": "👾", "duration": 40, "multiplier": 1.0, "weight": 1.5, "effect": "codigo" },
+      { "key": "negativo",      "name": "NEGATIVO",      "emoji": "🔄", "duration": 30, "multiplier": 1.5, "weight": 1.5, "effect": "negativo" },
+      { "key": "fogos",         "name": "FOGOS",         "emoji": "🎆", "duration": 35, "multiplier": 2.0, "weight": 1.5, "effect": "fogos" },
+      { "key": "neve",          "name": "NEVE",          "emoji": "❄️", "duration": 40, "multiplier": 1.5, "weight": 1.5, "effect": "neve" },
+      { "key": "arcade",        "name": "ARCADE",        "emoji": "🕹️", "duration": 30, "multiplier": 2.0, "weight": 1.5, "effect": "arcade" },
+      { "key": "filme",         "name": "FILME ANTIGO",  "emoji": "🎞️", "duration": 40, "multiplier": 1.5, "weight": 1.5, "effect": "filme" }
     ]
   },
 

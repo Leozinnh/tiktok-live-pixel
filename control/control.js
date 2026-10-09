@@ -16,19 +16,12 @@ import { analisarRotulo, rotuloDe } from "/ui/js/geometry.js";
 
 const INTERVALO = 1500;
 
-const CATALOGO = [
-  ["hora_do_pixel", "🎨 HORA DO PIXEL"],
-  ["arco_iris", "🌈 ARCO-ÍRIS"],
-  ["pixel_turbo", "⚡ PIXEL TURBO"],
-  ["caos", "💥 CAOS"],
-  ["desafio", "🎯 DESAFIO"],
-];
-
 const doc = document;
 const $ = (id) => doc.getElementById(id);
 
 let ultimoEstado = null;
 let pixelAtual = null;
+let assinaturaDosBotoes = null;
 
 // ----------------------------------------------------------------------
 // Rede
@@ -115,6 +108,7 @@ async function atualizar() {
   desenharFeed(dados.feed || []);
   desenharAtividade(dados.atividade || []);
   desenharEvento(dados.event);
+  desenharBotoesDeEvento(dados.eventos || []);
   desenharUsuarios(dados);
   atualizarBotoes(dados.modo_teste, fonte);
 }
@@ -503,15 +497,35 @@ function escapar(texto) {
 // Partida
 // ----------------------------------------------------------------------
 
-function montarBotoesDeEvento() {
-  $("botoes-evento").innerHTML = CATALOGO.map(
-    ([chave, rotulo]) =>
-      `<button class="botao-evento" data-evento="${chave}">${rotulo}</button>`
-  ).join("");
+/**
+ * Os botoes de forcar evento, na ordem do catalogo do SERVIDOR.
+ *
+ * A lista nao mora mais aqui: era uma copia propria do catalogo, e ficou
+ * para tras quando os eventos novos entraram — so os cinco primeiros tinham
+ * botao, e nao havia como forcar os outros. Agora ela chega pronta no estado,
+ * do mesmo catalogo que o `forcar` consulta; evento novo no config ganha
+ * botao sozinho.
+ *
+ * Redesenhar so quando a lista MUDA importa: o painel le o estado a cada
+ * 1,5s, e refazer os botoes a cada leitura arrancaria o botao debaixo do
+ * mouse de quem ia clicar.
+ */
+function desenharBotoesDeEvento(eventos) {
+  const assinatura = JSON.stringify(eventos);
+  if (assinatura === assinaturaDosBotoes) return;
+  assinaturaDosBotoes = assinatura;
+
+  $("botoes-evento").innerHTML = eventos
+    .map(
+      (evento) =>
+        `<button class="botao-evento" data-evento="${escapar(evento.key)}">${escapar(
+          `${evento.emoji || ""} ${evento.name || evento.key}`.trim()
+        )}</button>`
+    )
+    .join("");
 }
 
 function iniciar() {
-  montarBotoesDeEvento();
   ligarCampos();
   ligarBotoes();
   atualizar();

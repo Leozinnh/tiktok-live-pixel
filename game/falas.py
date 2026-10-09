@@ -22,9 +22,15 @@ certo).
 quantidade nem presente — o que ela tem e a pessoa, e a frase inteira gira
 em torno do nome dela.
 
-Quem quiser trocar as frases sem mexer no codigo aponta `tts.falas` — e
-`tts.boas_vindas` — no `config.json` para as proprias listas; as daqui sao o
-padrao do jogo.
+`ABERTURA_DE_EVENTO` e `FIM_DE_EVENTO` sao as listas dos eventos da LIVE
+(HORA DO PIXEL, CAOS...). Atencao ao `{nome}` delas: e o nome do EVENTO
+("PIXEL TURBO"), nao o de uma pessoa. A voz e o segundo aviso de que algo
+mudou — o banner esta na tela, mas quem esta de costas para ela so descobre
+pelo alto-falante.
+
+Quem quiser trocar as frases sem mexer no codigo aponta `tts.falas`,
+`tts.boas_vindas`, `tts.eventos` e `tts.eventos_fim` no `config.json` para as
+proprias listas; as daqui sao o padrao do jogo.
 """
 
 FALAS = [
@@ -319,4 +325,112 @@ BOAS_VINDAS = [
     "Mais um craque na área! Bem-vindo, {nome}!",
     "Valeu por chegar, {nome}! Bem-vindo!",
     "{nome}! Bem-vindo, bora pintar!",
+]
+
+# --------------------------------------------------------------------------
+# Eventos da LIVE (o `{nome}` e o nome do EVENTO: "PIXEL TURBO")
+# --------------------------------------------------------------------------
+
+ABERTURA_DE_EVENTO = [
+    # --- Originais ---
+    "Atenção, família! Começou o {nome}! Corre pra tela!",
+    "É agora! {nome} no ar! Aproveita!",
+    "Olha o evento! {nome} começou! Bora pintar!",
+    "{nome} começou! Todo mundo pra tela!",
+    "Família, é hoje! {nome} está no ar!",
+    "Começou o {nome}! A tela tá valendo mais!",
+    "Atenção! {nome} entrou no ar! Vem pintar!",
+    "Uhuu! É o {nome}! Corre que é por tempo limitado!",
+    "Alô, alô! {nome} começou! Não perde!",
+    "Segura a emoção: {nome} no ar agora!",
+    "Olha o {nome} aí, gente! Bora aproveitar!",
+    "É o {nome}! A tela tá chamando você!",
+    "Começou! {nome} no ar — pinta logo!",
+    "Prepara o dedo! {nome} começou!",
+    "Família, {nome} tá no ar! É a hora!",
+
+    # --- Alarme geral ---
+    "Alerta na live! {nome} começou! Todo mundo pra tela!",
+    "Atenção, atenção! {nome} acaba de começar! Corre!",
+    "Sirene tocando! {nome} no ar! Bora, bora, bora!",
+    "Atenção, galera! {nome} entrou no ar agora mesmo!",
+    "Olha o aviso! {nome} começou! Vem pintar!",
+    "Para tudo! {nome} começou! Olha pra tela!",
+    "Evento no ar! {nome} começou! Não pisca!",
+    "Tá valendo! {nome} começou! Corre pra tela!",
+
+    # --- Empolgadas ---
+    "Bora! {nome} começou! A tela é de vocês!",
+    "Chegou a hora! {nome} no ar! Pinta com tudo!",
+    "Explodiu! {nome} começou! Vem pintar, família!",
+    "Segura que vem emoção! {nome} começou!",
+    "Chegou chegando! {nome} no ar! Aproveita, família!",
+    "Hoje a tela pega fogo! {nome} começou!",
+    "Eita, começou! {nome} no ar! Bora aproveitar!",
+    "É tudo ou nada! {nome} começou! Pinta, pinta, pinta!",
+    "Agora é a hora! {nome} no ar! Não deixa passar!",
+    "Que loucura! {nome} começou! Corre pra tela!",
+
+    # --- Por tempo limitado ---
+    "Corre que é rápido! {nome} começou! Aproveita!",
+    "O relógio tá correndo! {nome} no ar! Vem pintar!",
+    "Tempo limitado! {nome} começou! Pinta antes que acabe!",
+    "Não dá pra perder! {nome} no ar agora! Bora!",
+    "Dura pouco, então vem logo! {nome} começou!",
+    "Quem chegou, chegou! {nome} no ar! Aproveita!",
+
+    # --- Chamando a família ---
+    "Chama todo mundo! {nome} começou! Vem pra tela, família!",
+    "Família, tá começando! {nome} no ar! Vem pintar!",
+    "Avisa a galera! {nome} começou! Bora, família!",
+    "{nome} começou! Convida um amigo e vem pintar!",
+    "Vem pra tela, família! {nome} tá no ar!",
+]
+
+FIM_DE_EVENTO = [
+    # --- Originais ---
+    "E o {nome} acabou! Valeu a todo mundo que pintou!",
+    "{nome} chegou ao fim! Obrigado, família!",
+    "Acabou o {nome}! Que momento, gente!",
+    "O {nome} terminou! Fica ligado que já vem outro!",
+    "Fim do {nome}! Vocês pintaram demais!",
+    "E encerra o {nome}! Valeu por pintar com a gente!",
+    "O {nome} foi embora! Obrigado a quem aproveitou!",
+    "Terminou o {nome}! Já já tem mais!",
+    "Acabou! {nome} encerrado — obrigado, família!",
+    "Fim de {nome}! Que correria boa!",
+    "O {nome} acabou, mas a tela continua! Bora!",
+
+    # --- Agradecendo ---
+    "{nome} terminou! Muito obrigado a todo mundo que participou!",
+    "Fim de {nome}! Vocês foram incríveis, valeu, família!",
+    "Acabou {nome}! Gratidão a quem pintou com a gente!",
+    "{nome} encerrado! Obrigado pela energia de vocês!",
+    "Valeu, família! {nome} chegou ao fim!",
+    "{nome} acabou! A tela ficou linda por causa de vocês!",
+    "Fim de {nome}! Que festa vocês fizeram, obrigado!",
+    "{nome} terminou! Vocês arrasaram, muito obrigado!",
+
+    # --- Já vem mais ---
+    "{nome} acabou! Mas fica por aqui, que vem mais coisa!",
+    "Fim de {nome}! Daqui a pouco tem outro, fica ligado!",
+    "{nome} encerrado! Não sai daí, que a live continua!",
+    "Acabou {nome}! O próximo já tá chegando, família!",
+    "{nome} terminou! Fica com a gente, que a festa não acaba!",
+    "Fim de {nome}! Mas a tela continua esperando você!",
+
+    # --- Empolgadas ---
+    "Que correria boa! {nome} acabou! Valeu, família!",
+    "Ufa! {nome} terminou! Vocês pintaram demais!",
+    "{nome} acabou e a tela tá um espetáculo! Obrigado!",
+    "E fim de {nome}! Que loucura foi essa, gente!",
+    "Acabou! {nome} encerrado! Bora seguir pintando!",
+    "{nome} chegou ao fim! Foi lindo demais, família!",
+
+    # --- Curtinhas ---
+    "{nome} acabou! Valeu, galera!",
+    "Fim de {nome}! Obrigado, família!",
+    "{nome} encerrado! Bora seguir!",
+    "Terminou {nome}! Valeu por pintar!",
+    "Acabou {nome}! Que beleza, gente!",
 ]

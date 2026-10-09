@@ -257,7 +257,18 @@ class EstadoJogo:
         self.hub.publicar({"type": "stats", **self.stats()})
 
     def _publicar_do_hub(self, mensagem: dict) -> None:
-        """O agendador publica pelo hub como qualquer outra peca do jogo."""
+        """O agendador publica pelo hub como qualquer outra peca do jogo.
+
+        De quebra, a VOZ: um evento que so muda o banner passa despercebido
+        de quem esta de costas para a tela — o narrador chama a atencao pelo
+        alto-falante quando o evento comeca e avisa quando ele acaba.
+        """
+        tipo = mensagem.get("type")
+        if tipo == "event_start":
+            self.narrador.anunciar_evento(str(mensagem.get("name") or ""))
+        elif tipo == "event_end":
+            self.narrador.anunciar_fim_de_evento(str(mensagem.get("name") or ""))
+
         self.hub.publicar(mensagem)
 
     def multiplicador(self) -> float:
@@ -327,5 +338,13 @@ class EstadoJogo:
             },
             "modo_teste": self.modo_teste,
             "event": self.scheduler.estado() if self.scheduler else None,
+            # O catalogo inteiro vai JUNTO: o painel monta os botoes de
+            # forcar evento a partir DELE, e nao de uma copia propria. A copia
+            # ja ficou para tras uma vez — com os eventos novos no config e
+            # sem botao no painel, nao havia como forcar nenhum deles.
+            "eventos": [
+                {"key": e["key"], "name": e["name"], "emoji": e["emoji"]}
+                for e in (self.scheduler.catalogo if self.scheduler else ())
+            ],
             "fila": self.fila.size(),
         }

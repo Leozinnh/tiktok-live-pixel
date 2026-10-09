@@ -1,5 +1,5 @@
-"""A voz do jogo: presente e chegada — sorteio de frases, fila e o ciclo
-gerar-tocar-apagar.
+"""A voz do jogo: presente, chegada e evento — sorteio de frases, fila e o
+ciclo gerar-tocar-apagar.
 
 O motor de verdade (edge-tts e MCI) fica fora do teste de proposito —
 internet e placa de som nao existem num pytest. `gerar` e `tocar` sao
@@ -11,8 +11,15 @@ sintese. A sintese de verdade e provada a ouvido, no `.verif/smoke_audio.py`.
 import time
 from pathlib import Path
 
-from game.falas import BOAS_VINDAS, FALAS
-from game.narrador import BOAS_VINDAS_PADRAO, FALA_PADRAO, FILA_MAXIMA, Narrador
+from game.falas import ABERTURA_DE_EVENTO, BOAS_VINDAS, FALAS, FIM_DE_EVENTO
+from game.narrador import (
+    ABERTURA_PADRAO,
+    BOAS_VINDAS_PADRAO,
+    FALA_PADRAO,
+    FILA_MAXIMA,
+    VOZ_PADRAO,
+    Narrador,
+)
 
 
 def test_a_frase_sai_do_sorteio_das_frases_do_jogo():
@@ -112,6 +119,104 @@ def test_entrada_com_a_voz_desligada_fica_muda():
     narrador = Narrador({"tts": {"active": False}})
 
     assert narrador.anunciar_entrada("ana") is None
+
+
+# --------------------------------------------------------------------------
+# As vozes
+# --------------------------------------------------------------------------
+
+
+def test_sem_lista_de_vozes_tudo_sai_na_voz_de_sempre():
+    """O contrato de quem nao mexeu no config: uma voz so, sempre ela."""
+    narrador = Narrador({})
+    assert {narrador._proxima_voz() for _ in range(5)} == {VOZ_PADRAO}
+
+    com_voz = Narrador({"tts": {"voz": "pt-BR-AntonioNeural"}})
+    assert com_voz._proxima_voz() == "pt-BR-AntonioNeural"
+
+
+def test_a_lista_de_vozes_limpa_espacos_e_entradas_vazias():
+    narrador = Narrador({"tts": {"vozes": [" pt-BR-AntonioNeural ", "", "  "]}})
+    assert narrador.vozes == ["pt-BR-AntonioNeural"]
+
+
+def test_o_rodizio_de_vozes_passa_por_todas_e_volta():
+    """Com mais de uma voz, cada fala sai numa — em rodizio, na ordem fixa.
+
+    Ordem fixa e nao sorteio: da para prever, testar, e quem acompanha ouve a
+    fila de vozes em vez de um caos.
+    """
+    narrador = Narrador(
+        {"tts": {"vozes": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural"]}}
+    )
+
+    assert [narrador._proxima_voz() for _ in range(4)] == [
+        "pt-BR-FranciscaNeural",
+        "pt-BR-AntonioNeural",
+        "pt-BR-FranciscaNeural",
+        "pt-BR-AntonioNeural",
+    ]
+
+
+# --------------------------------------------------------------------------
+# Eventos
+# --------------------------------------------------------------------------
+
+
+def test_o_anuncio_de_evento_sai_do_sorteio_das_aberturas():
+    narrador = Narrador({})
+
+    texto = narrador.texto_de_evento("PIXEL TURBO")
+
+    possiveis = [frase.format(nome="PIXEL TURBO") for frase in ABERTURA_DE_EVENTO]
+    assert texto in possiveis
+
+
+def test_o_fim_de_evento_sai_do_sorteio_dos_fins():
+    narrador = Narrador({})
+
+    texto = narrador.texto_do_fim_de_evento("CAOS")
+
+    possiveis = [frase.format(nome="CAOS") for frase in FIM_DE_EVENTO]
+    assert texto in possiveis
+
+
+def test_toda_frase_de_evento_tem_o_nome():
+    """Aqui o `{nome}` e do EVENTO ("PIXEL TURBO"), nunca o de uma pessoa —
+    e uma frase sem ele nao diz de que evento se trata."""
+    for frase in ABERTURA_DE_EVENTO + FIM_DE_EVENTO:
+        assert "{nome}" in frase, frase
+
+
+def test_frases_de_evento_do_config_substituem_as_do_jogo():
+    narrador = Narrador(
+        {"tts": {"eventos": ["começou {nome}!"], "eventos_fim": ["acabou {nome}!"]}}
+    )
+
+    assert narrador.anunciar_evento("CAOS") == "começou CAOS!"
+    assert narrador.anunciar_fim_de_evento("CAOS") == "acabou CAOS!"
+
+
+def test_evento_quebrado_cai_na_padrao():
+    """Um `{placeholder}` invalido nao pode deixar o evento mudo."""
+    narrador = Narrador({"tts": {"eventos": ["oi {nao_existe}"]}})
+
+    assert narrador.texto_de_evento("CAOS") == ABERTURA_PADRAO.format(nome="CAOS")
+
+
+def test_evento_sem_nome_nao_vira_buraco_na_frase():
+    """O nome chega de fora (o `event_start`/`event_end` do agendador); se
+    vier vazio, a frase ainda sai inteira, com "evento" no lugar."""
+    narrador = Narrador({"tts": {"eventos": ["começou {nome}!"]}})
+
+    assert narrador.texto_de_evento("") == "começou evento!"
+
+
+def test_evento_com_a_voz_desligada_fica_mudo():
+    narrador = Narrador({"tts": {"active": False}})
+
+    assert narrador.anunciar_evento("CAOS") is None
+    assert narrador.anunciar_fim_de_evento("CAOS") is None
 
 
 def test_a_thread_gera_toca_e_apaga(tmp_path):

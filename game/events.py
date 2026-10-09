@@ -9,6 +9,10 @@ O agendador NAO pinta nada. Ele so decide QUANDO e quanto vale; quem pinta
 continua sendo o `ServicoPintura`. O unico numero que sai daqui e o
 multiplicador, que o pipeline le a cada evento.
 
+Quem escuta o agendador: o telao (banner e efeito, pelo `publicar`), o
+pipeline (o multiplicador) e a VOZ — o `estado` liga o `event_start` e o
+`event_end` ao narrador, que anuncia o evento pelo alto-falante.
+
 O relogio entra por parametro (`agora_fn`). Isso e o que permite testar uma
 janela de 60 segundos sem esperar 60 segundos — e o que garante que o teste
 nao fica lento nem instavel.
@@ -70,10 +74,79 @@ CATALOGO_PADRAO = (
         "weight": 1.0,
         "effect": "desafio",
     },
+    {
+        "key": "tempestade",
+        "name": "TEMPESTADE",
+        "emoji": "⛈️",
+        "duration": 25.0,
+        "multiplier": 2.0,
+        "weight": 1.5,
+        "effect": "tempestade",
+    },
+    {
+        "key": "codigo",
+        "name": "CHUVA DE CÓDIGO",
+        "emoji": "👾",
+        "duration": 40.0,
+        "multiplier": 1.0,
+        "weight": 1.5,
+        "effect": "codigo",
+    },
+    {
+        "key": "negativo",
+        "name": "NEGATIVO",
+        "emoji": "🔄",
+        "duration": 30.0,
+        "multiplier": 1.5,
+        "weight": 1.5,
+        "effect": "negativo",
+    },
+    {
+        "key": "fogos",
+        "name": "FOGOS",
+        "emoji": "🎆",
+        "duration": 35.0,
+        "multiplier": 2.0,
+        "weight": 1.5,
+        "effect": "fogos",
+    },
+    {
+        "key": "neve",
+        "name": "NEVE",
+        "emoji": "❄️",
+        "duration": 40.0,
+        "multiplier": 1.5,
+        "weight": 1.5,
+        "effect": "neve",
+    },
+    {
+        "key": "arcade",
+        "name": "ARCADE",
+        "emoji": "🕹️",
+        "duration": 30.0,
+        "multiplier": 2.0,
+        "weight": 1.5,
+        "effect": "arcade",
+    },
+    {
+        "key": "filme",
+        "name": "FILME ANTIGO",
+        "emoji": "🎞️",
+        "duration": 40.0,
+        "multiplier": 1.5,
+        "weight": 1.5,
+        "effect": "filme",
+    },
 )
 
 INTERVALO_PADRAO = 180.0
 PRIMEIRO_EM_PADRAO = 75.0
+
+# A folga do intervalo entre eventos: +-25%. Um relogio cravado vira
+# metronomo — a audiencia decora o horario e para de prestar atencao na
+# espera. O sorteio do intervalo usa a mesma semente do sorteio do evento,
+# entao o teste continua deterministico.
+JITTER_DO_INTERVALO = 0.25
 
 
 def _catalogo(bruto) -> tuple[dict, ...]:
@@ -131,6 +204,9 @@ class SchedulerEventos:
 
         self._ativo: dict | None = None
         self._proximo = self.agora() + self.primeiro_em
+        # A chave do ultimo evento que comecou (sorteado ou forcado). O
+        # sorteio evita repeti-la: dois CAOS seguidos parecem defeito.
+        self._ultimo: str | None = None
 
     # ------------------------------------------------------------------
     # Leitura
@@ -218,17 +294,35 @@ class SchedulerEventos:
     # ------------------------------------------------------------------
 
     def _sortear(self) -> dict | None:
-        pesos = [e["weight"] for e in self.catalogo]
-        if not self.catalogo or sum(pesos) <= 0:
+        candidatos = [e for e in self.catalogo if e["weight"] > 0]
+        if not candidatos:
             return None
-        return self._sorteio.choices(self.catalogo, weights=pesos, k=1)[0]
+
+        # Nada de repetir o anterior, quando ha alternativa: o sorteio e com
+        # reposicao, e sem esta poda o mesmo evento sair duas vezes seguidas
+        # com a frequencia que a matematica manda — e na tela isso le como
+        # "so tem esse evento hoje".
+        if self._ultimo is not None:
+            outros = [e for e in candidatos if e["key"] != self._ultimo]
+            if outros:
+                candidatos = outros
+
+        pesos = [e["weight"] for e in candidatos]
+        return self._sorteio.choices(candidatos, weights=pesos, k=1)[0]
+
+    def _espera(self) -> float:
+        """O intervalo ate o proximo evento, com a folga do metronomo."""
+        return self.intervalo * (
+            1.0 + JITTER_DO_INTERVALO * (2.0 * self._sorteio.random() - 1.0)
+        )
 
     def _comecar(self, definicao: dict) -> dict:
         agora = self.agora()
         ends_at = agora + definicao["duration"]
 
         self._ativo = {**definicao, "ends_at": ends_at}
-        self._proximo = ends_at + self.intervalo
+        self._proximo = ends_at + self._espera()
+        self._ultimo = definicao["key"]
 
         aviso = {
             "type": "event_start",
@@ -252,9 +346,14 @@ class SchedulerEventos:
         if self._ativo is None:
             return
 
+        # O nome vai junto no aviso de fim: quem le e a VOZ (o narrador
+        # anuncia "o ARCO-IRIS acabou"), e ela so tem esta mensagem para
+        # saber de que evento se trata — a chave crua nao se pronuncia.
         chave = self._ativo["key"]
+        nome = self._ativo["name"]
+        emoji = self._ativo["emoji"]
         self._ativo = None
-        self._proximo = self.agora() + self.intervalo
+        self._proximo = self.agora() + self._espera()
 
-        self.publicar({"type": "event_end", "key": chave})
+        self.publicar({"type": "event_end", "key": chave, "name": nome, "emoji": emoji})
         logger.info("Evento encerrado: %s", chave)
